@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="{{ .Lang }}" class="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preload" as="style" href="/assets/app.css?v={{ .Version }}" />
+    <link rel="stylesheet" href="/assets/app.css?v={{ .Version }}" />
+    {{ with .Head }}
+    <title>{{ .Title }}</title>
+    {{ range .Meta }}
+    {{ if ne .Content "" }}
+    <meta {{ if ne .Name "" }}name="{{ .Name }}" {{ end }} {{ if ne .Property "" }}property="{{ .Property }}" {{ end }}
+        content="{{ .Content }}" />
+    {{ end }}
+    {{ end }}
+    {{ range .Link }}
+    <link rel="{{ .Rel }}" href="{{ .Href }}" />
+    {{ end }}
+    {{ end }}
+    <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
+</head>
+
+<body id="{{ .Component }}">
+    <section id="react-app">{{.InnerHtmlContent}}</section>
+    <script type="text/javascript">
+        window.INITIAL_PROPS = JSON.parse({{ convertToJson .Payload }});
+        window.TRANSLATIONS = JSON.parse({{ convertToJson .Translations }});
+        window.WEBSITE = JSON.parse({{ convertToJson .Website }});
+        window.USER_INFO = JSON.parse({{ convertToJson .UserInfo }});
+        window.LANG = "{{ .Lang }}";
+    </script>
+    <script defer type="module" src="/assets/app/{{.Component}}?v={{ .Version }}"></script>
+    <script type="module" src="/assets/app.js?v={{ .Version }}"></script>
+
+    {{/* Google Ads */}}
+    {{ if .GoogleAdsJS }}
+    <script async src="{{ .GoogleAdsJS }}" crossorigin="anonymous"></script>
+    {{ end }}
+
+    {{/* Google Analytics */}}
+    {{ if .GoogleAnalytics }}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ .GoogleAnalytics }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', '{{ .GoogleAnalytics }}');
+    </script>
+    {{ end }}
+
+    {{/* Microsoft Clarity */}}
+    {{ if .MicrosoftClarityId }}
+    <script type="text/javascript">
+        (function (c, l, a, r, i, t, y) {
+            c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+            t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+            y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+        })(window, document, "clarity", "script", "{{ .MicrosoftClarityId }}");
+    </script>
+    {{ end }}
+</body>
+
+</html>
