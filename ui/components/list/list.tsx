@@ -1,8 +1,8 @@
 import React from 'react';
 import Pagination from './pagination';
 import clsx from 'clsx';
-import { isAuthenticated } from '@/core/lib/auth';
-import { showLoginModal } from '@/core/layout/Login';
+import { isAuthenticated } from '../../lib/auth';
+import { showLoginModal } from '../../layout/Login';
 
 // 合并类名的工具函数
 const cn = (...classes) => {
