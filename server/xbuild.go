@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -7,33 +7,34 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/daodao97/goreact/server"
 )
 
 // 客户端入口模板
 const clientTemplateFormat = `import { %s } from "@/pages/%s";
-import { renderPage } from "@/core/lib/PageWrapper";
+import { renderPage } from "#/core/lib/PageWrapper";
 
 renderPage({Component: %s});
 `
 
 // 服务端入口模板
 const serverTemplateFormat = `import { %s } from "@/pages/%s";
-import { createServerRenderer } from "@/core/lib/ServerRender";
+import { createServerRenderer } from "#/core/lib/ServerRender";
 
 globalThis.Render = createServerRenderer({ Component: %s });
 `
 
 var appEntry = "./frontend/app"
 var serverEntry = "./frontend/server"
+var pagesDir = "./frontend/pages"
 
 var buildDir = "./build"
 var buildServerDir = "./build/server"
 
-var componentDir = "./frontend/pages"
+func BuildJS() {
+	os.RemoveAll(buildDir)
+	os.RemoveAll(appEntry)
+	os.RemoveAll(serverEntry)
 
-func main() {
 	// 确保目录存在
 	err := ensureDirectories(appEntry, serverEntry)
 	if err != nil {
@@ -52,14 +53,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = server.BuildClientComponents(appEntry, buildDir, map[string]string{
+	err = BuildClientComponents(appEntry, buildDir, map[string]string{
 		"@": filepath.Join(currentDir, "frontend"),
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = server.BuildServerComponents(serverEntry, buildServerDir, map[string]string{
+	_, err = BuildServerComponents(serverEntry, buildServerDir, map[string]string{
 		"@": filepath.Join(currentDir, "frontend"),
 	})
 	if err != nil {
@@ -125,7 +126,7 @@ func ensureDirectories(dirs ...string) error {
 // 生成入口文件
 func generateEntryFiles() error {
 	// 扫描组件目录
-	componentFiles, err := getComponentFiles(componentDir)
+	componentFiles, err := getComponentFiles(pagesDir)
 	if err != nil {
 		return err
 	}

@@ -51,6 +51,40 @@ func aliasPlugin(aliases map[string]string) esbuild.Plugin {
 				// 返回原始路径，让 esbuild 继续尝试解析
 				return esbuild.OnResolveResult{Path: basePath, External: false}, nil
 			})
+			build.OnResolve(esbuild.OnResolveOptions{Filter: "^#core/"}, func(args esbuild.OnResolveArgs) (esbuild.OnResolveResult, error) {
+				// 将 #core/ 替换为实际路径 ./core/ui/
+				newPath := strings.TrimPrefix(args.Path, "#core/")
+				basePath := "./core/ui/" + newPath // 硬编码目标路径
+
+				// 尝试不同的扩展名
+				extensions := []string{".tsx", ".ts", ".jsx", ".js"} // 优先查找带扩展名的文件
+				for _, ext := range extensions {
+					fullPath := basePath + ext
+					if _, err := os.Stat(fullPath); err == nil {
+						return esbuild.OnResolveResult{Path: fullPath, External: false}, nil
+					}
+				}
+				// 尝试不带扩展名的文件（可能是目录）
+				if _, err := os.Stat(basePath); err == nil {
+					// 检查是否是目录，如果是目录，则尝试 index 文件
+					isDir, _ := os.Stat(basePath)
+					if isDir.IsDir() {
+						for _, ext := range extensions {
+							fullPath := basePath + "/index" + ext
+							if _, err := os.Stat(fullPath); err == nil {
+								return esbuild.OnResolveResult{Path: fullPath, External: false}, nil
+							}
+						}
+					} else {
+						// 如果是文件，直接返回
+						return esbuild.OnResolveResult{Path: basePath, External: false}, nil
+					}
+				}
+
+				fmt.Printf("核心库路径解析失败: %s -> %s\n", args.Path, basePath)
+				// 返回原始路径，让 esbuild 继续尝试解析或其他插件处理
+				return esbuild.OnResolveResult{Path: args.Path, External: false}, nil // 返回原始路径以便其他解析器处理
+			})
 		},
 	}
 }
