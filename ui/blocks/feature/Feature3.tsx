@@ -9,7 +9,7 @@ interface Feature3Props {
     }[];
 }
 
-export const Feature3: React.FC<Feature3Props> = ({ title, description, features }) => {
+export default function Feature3({ title, description, features }: Feature3Props) {
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
             <h2 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{title}</h2>
