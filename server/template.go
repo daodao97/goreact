@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	_ "embed"
@@ -15,7 +16,6 @@ import (
 	"github.com/daodao97/goreact/conf"
 	"github.com/daodao97/goreact/i18n"
 	"github.com/daodao97/goreact/model"
-	"github.com/daodao97/goreact/util"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"rogchap.com/v8go"
@@ -41,25 +41,17 @@ func CreateTemplateRenderer() render.HTMLRender {
 		log.Fatal(err)
 	}
 
-	reactFiles, err := util.GetFileContent("./build/server", ".js")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	return &TemplateRenderer{
 		templates:  tmpl,
-		reactFiles: reactFiles,
 		reactCache: map[string]*ReactRenderer{},
 		ginContext: nil,
 	}
 }
 
 type TemplateRenderer struct {
-	templates     *template.Template
-	reactFiles    map[string]string
-	reactCache    map[string]*ReactRenderer
-	ginContext    *gin.Context
-	sharedIsolate *v8go.Isolate
+	templates  *template.Template
+	reactCache map[string]*ReactRenderer
+	ginContext *gin.Context
 }
 
 func (t *TemplateRenderer) SetGinContext(c *gin.Context) {
@@ -67,22 +59,19 @@ func (t *TemplateRenderer) SetGinContext(c *gin.Context) {
 }
 
 func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any) (template.HTML, error) {
+	reactFiles, err := os.ReadFile(fmt.Sprintf("./build/server/%s", fragment))
+	if err != nil {
+		return template.HTML(""), err
+	}
 	if _, ok := t.reactCache[fragment]; !ok {
-		if js, ok := t.reactFiles[fragment]; ok {
-			if t.sharedIsolate == nil {
-				t.sharedIsolate = v8go.NewIsolate()
-			}
+		isolate := v8go.NewIsolate()
+		global := v8go.NewObjectTemplate(isolate)
+		ctx := v8go.NewContext(isolate, global)
 
-			global := v8go.NewObjectTemplate(t.sharedIsolate)
-			ctx := v8go.NewContext(t.sharedIsolate, global)
-
-			t.reactCache[fragment] = &ReactRenderer{
-				ctx:     ctx,
-				content: js,
-				name:    fragment,
-			}
-		} else {
-			return template.HTML(""), fmt.Errorf("component not found: %s", fragment)
+		t.reactCache[fragment] = &ReactRenderer{
+			ctx:     ctx,
+			content: string(reactFiles),
+			name:    fragment,
 		}
 	}
 
@@ -213,12 +202,4 @@ func (r *ReactRenderer) Close() {
 		r.ctx.Close()
 		r.ctx = nil
 	}
-}
-
-// 在关闭应用或清理缓存时调用
-func (t *TemplateRenderer) CleanupCache() {
-	for _, renderer := range t.reactCache {
-		renderer.Close()
-	}
-	t.reactCache = make(map[string]*ReactRenderer)
 }
