@@ -71,10 +71,6 @@ func (t *TemplateRenderer) Close() {
 
 func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any) (template.HTML, error) {
 	xlog.Debug("RenderReact render", xlog.Any("fragment", fragment))
-	// 首先检查缓存
-	// if renderer, ok := t.reactCache[fragment]; ok {
-	// 	return renderer.Ctx(c).Render(data)
-	// }
 
 	// 缓存中没有，才读取文件
 	reactFiles, err := os.ReadFile(fmt.Sprintf("./build/server/%s", fragment))
@@ -83,16 +79,18 @@ func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any
 	}
 
 	isolate := v8go.NewIsolate()
+	// 确保隔离实例被释放
+	defer isolate.Dispose()
+
 	global := v8go.NewObjectTemplate(isolate)
 	ctx := v8go.NewContext(isolate, global)
+	defer ctx.Close()
 
 	render := &ReactRenderer{
 		ctx:     ctx,
 		content: string(reactFiles),
 		name:    fragment,
 	}
-
-	defer render.Close()
 
 	return render.Ctx(c).Render(data)
 }
@@ -166,9 +164,14 @@ func (r *HTMLRender) Render(w http.ResponseWriter) error {
 	}
 
 	data.Version = conf.Get().GitTag
-	defer r.renderer.Close()
 
-	return r.Template.ExecuteTemplate(w, r.TemplateName, data)
+	// 先执行模板渲染，然后再释放资源
+	err = r.Template.ExecuteTemplate(w, r.TemplateName, data)
+
+	// 确保资源释放
+	r.renderer.Close()
+
+	return err
 }
 
 // WriteContentType 设置内容类型
