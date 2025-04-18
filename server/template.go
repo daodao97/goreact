@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	_ "embed"
 
@@ -71,6 +72,12 @@ func (t *TemplateRenderer) Close() {
 
 func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any) (template.HTML, error) {
 	xlog.Debug("RenderReact render", xlog.Any("fragment", fragment))
+
+	start := time.Now()
+
+	defer func() {
+		xlog.Debug("RenderReact render end", xlog.Any("fragment", fragment), xlog.Any("time", time.Since(start)))
+	}()
 
 	// 从池中获取 isolate
 	isolate := v8go.NewIsolate()
