@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 
 	_ "embed"
 
@@ -34,32 +33,6 @@ func convertToJson(a any) string {
 	s, _ := json.Marshal(a)
 	return string(s)
 }
-
-// isolate 池实现
-type V8Pool struct {
-	pool sync.Pool
-}
-
-func NewV8Pool() *V8Pool {
-	return &V8Pool{
-		pool: sync.Pool{
-			New: func() interface{} {
-				return v8go.NewIsolate()
-			},
-		},
-	}
-}
-
-func (p *V8Pool) Get() *v8go.Isolate {
-	return p.pool.Get().(*v8go.Isolate)
-}
-
-func (p *V8Pool) Put(isolate *v8go.Isolate) {
-	p.pool.Put(isolate)
-}
-
-// 全局 isolate 池
-var v8Pool = NewV8Pool()
 
 func CreateTemplateRenderer() render.HTMLRender {
 	tmpl := template.New("").Funcs(functions)
@@ -100,8 +73,8 @@ func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any
 	xlog.Debug("RenderReact render", xlog.Any("fragment", fragment))
 
 	// 从池中获取 isolate
-	isolate := v8Pool.Get()
-	defer v8Pool.Put(isolate)
+	isolate := v8go.NewIsolate()
+	defer isolate.Dispose()
 
 	// 使用获取的 isolate 创建上下文
 	global := v8go.NewObjectTemplate(isolate)
