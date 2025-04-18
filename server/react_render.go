@@ -26,6 +26,14 @@ func (render *ReactRenderer) Ctx(c *gin.Context) *ReactRenderer {
 	return render
 }
 
+// Close 释放V8引擎资源
+func (r *ReactRenderer) Close() {
+	if r.ctx != nil {
+		r.ctx.Close()
+		r.ctx = nil
+	}
+}
+
 // Render 渲染 React 组件
 func (renderer *ReactRenderer) Render(data any) (template.HTML, error) {
 	params, err := json.MarshalIndent(data, "", "	")

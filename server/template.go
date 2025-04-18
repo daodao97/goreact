@@ -58,21 +58,34 @@ func (t *TemplateRenderer) SetGinContext(c *gin.Context) {
 	t.ginContext = c
 }
 
+// Close 清理所有React渲染器资源
+func (t *TemplateRenderer) Close() {
+	for fragment, renderer := range t.reactCache {
+		renderer.Close()
+		delete(t.reactCache, fragment)
+	}
+}
+
 func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any) (template.HTML, error) {
+	// 首先检查缓存
+	if renderer, ok := t.reactCache[fragment]; ok {
+		return renderer.Ctx(c).Render(data)
+	}
+
+	// 缓存中没有，才读取文件
 	reactFiles, err := os.ReadFile(fmt.Sprintf("./build/server/%s", fragment))
 	if err != nil {
 		return template.HTML(""), err
 	}
-	if _, ok := t.reactCache[fragment]; !ok {
-		isolate := v8go.NewIsolate()
-		global := v8go.NewObjectTemplate(isolate)
-		ctx := v8go.NewContext(isolate, global)
 
-		t.reactCache[fragment] = &ReactRenderer{
-			ctx:     ctx,
-			content: string(reactFiles),
-			name:    fragment,
-		}
+	isolate := v8go.NewIsolate()
+	global := v8go.NewObjectTemplate(isolate)
+	ctx := v8go.NewContext(isolate, global)
+
+	t.reactCache[fragment] = &ReactRenderer{
+		ctx:     ctx,
+		content: string(reactFiles),
+		name:    fragment,
 	}
 
 	return t.reactCache[fragment].Ctx(c).Render(data)
@@ -147,6 +160,7 @@ func (r *HTMLRender) Render(w http.ResponseWriter) error {
 	}
 
 	data.Version = conf.Get().GitTag
+	defer r.renderer.Close()
 
 	return r.Template.ExecuteTemplate(w, r.TemplateName, data)
 }
