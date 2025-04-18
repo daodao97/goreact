@@ -209,11 +209,3 @@ func extendPayload(
 		InnerHtmlContent: htmlContent,
 	}
 }
-
-// 需要添加的Close方法
-func (r *ReactRenderer) Close() {
-	if r.ctx != nil {
-		r.ctx.Close()
-		r.ctx = nil
-	}
-}
