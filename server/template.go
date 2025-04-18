@@ -71,8 +71,6 @@ func (t *TemplateRenderer) Close() {
 }
 
 func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any) (template.HTML, error) {
-	xlog.Debug("RenderReact render", xlog.Any("fragment", fragment))
-
 	start := time.Now()
 
 	defer func() {
