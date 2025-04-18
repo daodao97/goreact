@@ -55,10 +55,11 @@ func CreateTemplateRenderer() render.HTMLRender {
 }
 
 type TemplateRenderer struct {
-	templates  *template.Template
-	reactFiles map[string]string
-	reactCache map[string]*ReactRenderer
-	ginContext *gin.Context
+	templates     *template.Template
+	reactFiles    map[string]string
+	reactCache    map[string]*ReactRenderer
+	ginContext    *gin.Context
+	sharedIsolate *v8go.Isolate
 }
 
 func (t *TemplateRenderer) SetGinContext(c *gin.Context) {
@@ -68,9 +69,12 @@ func (t *TemplateRenderer) SetGinContext(c *gin.Context) {
 func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any) (template.HTML, error) {
 	if _, ok := t.reactCache[fragment]; !ok {
 		if js, ok := t.reactFiles[fragment]; ok {
-			isolate := v8go.NewIsolate()
-			global := v8go.NewObjectTemplate(isolate)
-			ctx := v8go.NewContext(isolate, global)
+			if t.sharedIsolate == nil {
+				t.sharedIsolate = v8go.NewIsolate()
+			}
+
+			global := v8go.NewObjectTemplate(t.sharedIsolate)
+			ctx := v8go.NewContext(t.sharedIsolate, global)
 
 			t.reactCache[fragment] = &ReactRenderer{
 				ctx:     ctx,
@@ -201,4 +205,20 @@ func extendPayload(
 		Component:        component,
 		InnerHtmlContent: htmlContent,
 	}
+}
+
+// 需要添加的Close方法
+func (r *ReactRenderer) Close() {
+	if r.ctx != nil {
+		r.ctx.Close()
+		r.ctx = nil
+	}
+}
+
+// 在关闭应用或清理缓存时调用
+func (t *TemplateRenderer) CleanupCache() {
+	for _, renderer := range t.reactCache {
+		renderer.Close()
+	}
+	t.reactCache = make(map[string]*ReactRenderer)
 }
