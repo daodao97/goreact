@@ -16,6 +16,7 @@ import (
 	"github.com/daodao97/goreact/conf"
 	"github.com/daodao97/goreact/i18n"
 	"github.com/daodao97/goreact/model"
+	"github.com/daodao97/xgo/xlog"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"rogchap.com/v8go"
@@ -40,6 +41,8 @@ func CreateTemplateRenderer() render.HTMLRender {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	xlog.Info("CreateTemplateRenderer", "tmpl", tmpl)
 
 	return &TemplateRenderer{
 		templates:  tmpl,
@@ -67,10 +70,11 @@ func (t *TemplateRenderer) Close() {
 }
 
 func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any) (template.HTML, error) {
+	xlog.Debug("RenderReact render", xlog.Any("fragment", fragment))
 	// 首先检查缓存
-	if renderer, ok := t.reactCache[fragment]; ok {
-		return renderer.Ctx(c).Render(data)
-	}
+	// if renderer, ok := t.reactCache[fragment]; ok {
+	// 	return renderer.Ctx(c).Render(data)
+	// }
 
 	// 缓存中没有，才读取文件
 	reactFiles, err := os.ReadFile(fmt.Sprintf("./build/server/%s", fragment))
@@ -82,13 +86,15 @@ func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any
 	global := v8go.NewObjectTemplate(isolate)
 	ctx := v8go.NewContext(isolate, global)
 
-	t.reactCache[fragment] = &ReactRenderer{
+	render := &ReactRenderer{
 		ctx:     ctx,
 		content: string(reactFiles),
 		name:    fragment,
 	}
 
-	return t.reactCache[fragment].Ctx(c).Render(data)
+	defer render.Close()
+
+	return render.Ctx(c).Render(data)
 }
 
 // Instance 实现 gin.HTMLRender 接口的方法
