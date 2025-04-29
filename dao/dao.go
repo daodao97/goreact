@@ -9,7 +9,6 @@ import (
 
 var UserModel xdb.Model
 var UserBalanceModel xdb.Model
-var ProjectWanxModel xdb.Model
 var ProjectUserBalanceModel xdb.Model
 var ProjectApiTokenModel xdb.Model
 
