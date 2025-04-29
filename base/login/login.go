@@ -19,7 +19,7 @@ func GetProvider(providerName string) *conf.AuthProvider {
 func handleUserLogin(c *gin.Context, userInfo map[string]string, jwtSecret string) error {
 	userId, err := CreateUserOrIgnore(xdb.Record{
 		"email":      userInfo["email"],
-		"user_name":  userInfo["name"],
+		"user_name":  userInfo["user_name"],
 		"avatar_url": userInfo["avatar_url"],
 		"channel":    userInfo["channel"],
 	})
@@ -31,7 +31,7 @@ func handleUserLogin(c *gin.Context, userInfo map[string]string, jwtSecret strin
 	payload := map[string]any{
 		"id":         userId,
 		"email":      userInfo["email"],
-		"user_name":  userInfo["name"],
+		"user_name":  userInfo["user_name"],
 		"avatar_url": userInfo["avatar_url"],
 	}
 
@@ -84,7 +84,7 @@ func GetUserInfo(c *gin.Context) (xdb.Record, error) {
 
 	userInfo := xdb.Record{
 		"email":      claims["email"],
-		"name":       claims["user_name"],
+		"user_name":  claims["user_name"],
 		"avatar_url": claims["avatar_url"],
 		"id":         claims["id"],
 	}

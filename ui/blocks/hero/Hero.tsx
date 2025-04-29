@@ -15,6 +15,7 @@ type Hero = {
     description: string;
     buttons: Button[];
     bgImage?: string;
+    textPosition?: 'top' | 'center' | 'bottom';
 }
 
 export default function Hero({ hero, children }: { hero: Hero, children: React.ReactNode }) {
@@ -27,9 +28,21 @@ export default function Hero({ hero, children }: { hero: Hero, children: React.R
         return () => window.removeEventListener('resize', updateHeight);
     }, []);
 
+    const getTextPositionClasses = () => {
+        switch (hero.textPosition) {
+            case 'top':
+                return 'items-start pt-24';
+            case 'bottom':
+                return 'items-end pb-24';
+            case 'center':
+            default:
+                return 'items-center';
+        }
+    };
+
     return (
         <section
-            className="relative px-4 sm:px-6 lg:px-8 shadow-xl flex items-center justify-center overflow-hidden"
+            className={`relative px-4 sm:px-6 lg:px-8 shadow-xl flex ${getTextPositionClasses()} justify-center overflow-hidden`}
             style={{
                 height: windowHeight,
                 backgroundImage: hero.bgImage ? `url(${hero.bgImage})` : 'none',
@@ -45,7 +58,7 @@ export default function Hero({ hero, children }: { hero: Hero, children: React.R
                 <div className="absolute inset-x-0 bottom-0 h-1/5 bg-gradient-to-t from-gray-900/90 to-transparent z-0"></div>
             )}
 
-            <div className="max-w-4xl mx-auto text-center relative z-10 pt-16">
+            <div className="max-w-4xl mx-auto text-center relative z-10">
                 <h1 className="text-4xl sm:text-5xl font-extrabold mb-6 tracking-tight text-white">
                     {hero.title}
                 </h1>
