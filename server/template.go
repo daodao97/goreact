@@ -162,11 +162,7 @@ func (r *HTMLRender) Render(w http.ResponseWriter) error {
 	data.GoogleAdsJS = conf.Get().GoogleAdsJS
 	data.GoogleAnalytics = conf.Get().GoogleAnalytics
 	data.MicrosoftClarityId = conf.Get().MicrosoftClarityId
-	if val, ok := r.renderer.ginContext.Get("head"); ok {
-		if head, ok := val.(*model.Head); ok {
-			data.Head = head
-		}
-	}
+	data.Head = i18n.GetHead(r.renderer.ginContext, strings.ToLower(strings.TrimSuffix(r.ComponentName, ".js")))
 
 	data.Version = conf.Get().GitTag
 

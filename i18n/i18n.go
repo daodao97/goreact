@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/daodao97/goreact/model"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 )
@@ -167,4 +168,16 @@ func GetTranslations(ctx *gin.Context) map[string]any {
 	}
 
 	return translations
+}
+
+func GetHead(ctx *gin.Context, pageName string) *model.Head {
+	lang := GetLang(ctx)
+
+	head := gjson.GetBytes(translate[lang], pageName+".head")
+
+	var headMap model.Head
+
+	json.Unmarshal([]byte(head.Raw), &headMap)
+
+	return &headMap
 }
