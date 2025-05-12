@@ -16,6 +16,7 @@ type Hero = {
     buttons: Button[];
     bgImage?: string;
     textPosition?: 'top' | 'center' | 'bottom';
+    heightLevel?: 'full' | 'medium' | 'small';
 }
 
 export default function Hero({ hero, children }: { hero: Hero, children: React.ReactNode }) {
@@ -40,11 +41,23 @@ export default function Hero({ hero, children }: { hero: Hero, children: React.R
         }
     };
 
+    const getHeightStyle = () => {
+        switch (hero.heightLevel) {
+            case 'medium':
+                return '70vh';
+            case 'full':
+                return windowHeight;
+            case 'small':
+            default:
+                return '50vh';
+        }
+    };
+
     return (
         <section
             className={`relative px-4 sm:px-6 lg:px-8 shadow-xl flex ${getTextPositionClasses()} justify-center overflow-hidden`}
             style={{
-                height: windowHeight,
+                height: getHeightStyle(),
                 backgroundImage: hero.bgImage ? `url(${hero.bgImage})` : 'none',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center'

@@ -35,14 +35,14 @@ export function LoginModal({ open, onOpenChange }: { open: boolean; onOpenChange
                         {/* 如果有其他登录方式，显示分隔线和其他登录方式 */}
                         {otherProviders.length > 0 && (
                             <>
-                                <div className="relative my-4">
+                                {mailProvider! && <div className="relative my-4">
                                     <div className="absolute inset-0 flex items-center">
                                         <div className="w-full border-t border-gray-300" />
                                     </div>
                                     <div className="relative flex justify-center text-sm">
                                         <span className="px-2 bg-white text-gray-500">{t('root.login.orLoginWith', '或通过以下方式登录')}</span>
                                     </div>
-                                </div>
+                                </div>}
 
                                 {/* 显示其他登录方式 */}
                                 {otherProviders.map((provider) => {
