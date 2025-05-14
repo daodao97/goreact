@@ -24,9 +24,9 @@ export function LoginModal({ open, onOpenChange }: { open: boolean; onOpenChange
         <Dialog.Root open={open} onOpenChange={onOpenChange}>
             <Dialog.Portal>
                 <Dialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-overlayShow" />
-                <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-6 shadow-lg max-w-md w-full data-[state=open]:animate-contentShow">
-                    {title && <Dialog.Title className="text-xl font-bold mb-4">{title}</Dialog.Title>}
-                    {description && <Dialog.Description className="text-sm text-gray-500 mb-4">{description}</Dialog.Description>}
+                <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg max-w-md w-full data-[state=open]:animate-contentShow">
+                    {title && <Dialog.Title className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">{title}</Dialog.Title>}
+                    {description && <Dialog.Description className="text-sm text-gray-500 dark:text-gray-400 mb-4">{description}</Dialog.Description>}
 
                     <div className="space-y-4">
                         {/* 优先显示mail登录 */}
@@ -37,10 +37,10 @@ export function LoginModal({ open, onOpenChange }: { open: boolean; onOpenChange
                             <>
                                 {mailProvider! && <div className="relative my-4">
                                     <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-gray-300" />
+                                        <div className="w-full border-t border-gray-300 dark:border-gray-600" />
                                     </div>
                                     <div className="relative flex justify-center text-sm">
-                                        <span className="px-2 bg-white text-gray-500">{t('root.login.orLoginWith', '或通过以下方式登录')}</span>
+                                        <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">{t('root.login.orLoginWith', '或通过以下方式登录')}</span>
                                     </div>
                                 </div>}
 
@@ -55,7 +55,7 @@ export function LoginModal({ open, onOpenChange }: { open: boolean; onOpenChange
                                             <button
                                                 key={provider.Provider}
                                                 type="button"
-                                                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                                             >
                                                 {provider.Provider}
                                             </button>
@@ -68,7 +68,7 @@ export function LoginModal({ open, onOpenChange }: { open: boolean; onOpenChange
 
                     <Dialog.Close asChild>
                         <button
-                            className="absolute top-4 right-4 inline-flex items-center justify-center rounded-full h-6 w-6 hover:bg-gray-200 focus:outline-none"
+                            className="absolute top-4 right-4 inline-flex items-center justify-center rounded-full h-6 w-6 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none text-gray-500 dark:text-gray-400"
                             aria-label="关闭"
                         >
                             <Cross2Icon />
@@ -279,7 +279,7 @@ function MailLogin({ data }: { data: any }) {
         <div className="w-full">
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {t('root.login.email', '邮箱')}
                     </label>
                     <input
@@ -287,14 +287,14 @@ function MailLogin({ data }: { data: any }) {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         placeholder={t('root.login.emailPlaceholder', '请输入邮箱')}
                         required
                     />
                 </div>
 
                 <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {t('root.login.password', '密码')}
                     </label>
                     <input
@@ -302,7 +302,7 @@ function MailLogin({ data }: { data: any }) {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         placeholder={t('root.login.passwordPlaceholder', '请输入密码')}
                         required
                     />
@@ -310,7 +310,7 @@ function MailLogin({ data }: { data: any }) {
 
                 {mode === 'register' && (
                     <div>
-                        <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {t('root.login.verificationCode', '验证码')}
                         </label>
                         <div className="flex">
@@ -319,7 +319,7 @@ function MailLogin({ data }: { data: any }) {
                                 type="text"
                                 value={verificationCode}
                                 onChange={(e) => setVerificationCode(e.target.value)}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                 placeholder={t('root.login.verificationCodePlaceholder', '请输入验证码')}
                                 required
                             />
@@ -327,22 +327,22 @@ function MailLogin({ data }: { data: any }) {
                                 type="button"
                                 onClick={handleGetVerificationCode}
                                 disabled={countdown > 0}
-                                className={`verification-code-btn px-4 py-2 text-sm font-medium text-white rounded-r-md focus:outline-none ${countdown > 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                                className={`verification-code-btn px-4 py-2 text-sm font-medium text-white rounded-r-md focus:outline-none ${countdown > 0 ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800'
                                     }`}
                             >
                                 {countdown > 0 ? `${countdown}秒后重试` : t('root.login.getVerificationCode', '获取验证码')}
                             </button>
                         </div>
                         {verificationErrorMsg && (
-                            <p className="mt-1 text-sm text-red-600">{verificationErrorMsg}</p>
+                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{verificationErrorMsg}</p>
                         )}
                     </div>
                 )}
 
                 {/* 全局错误信息显示 */}
                 {errorMsg && (
-                    <div className="py-2 px-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-600">{errorMsg}</p>
+                    <div className="py-2 px-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                        <p className="text-sm text-red-600 dark:text-red-400">{errorMsg}</p>
                     </div>
                 )}
 
@@ -350,7 +350,7 @@ function MailLogin({ data }: { data: any }) {
                     type="submit"
                     disabled={loading}
                     onClick={handleSubmit}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400 disabled:cursor-not-allowed"
+                    className="w-full bg-blue-600 dark:bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:bg-blue-400 dark:disabled:bg-blue-500 disabled:cursor-not-allowed"
                 >
                     {loading ? (
                         <span>{t('root.login.processing', '处理中...')}</span>
@@ -362,13 +362,13 @@ function MailLogin({ data }: { data: any }) {
                 </button>
 
                 <div className="text-center text-sm">
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 dark:text-gray-400">
                         {mode === 'login' ? t('root.login.noAccount', '还没有账号？') : t('root.login.hasAccount', '已有账号？')}
                     </span>
                     <button
                         type="button"
                         onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                        className="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none"
+                        className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 focus:outline-none"
                     >
                         {mode === 'login' ? t('root.login.registerBtn', '注册') : t('root.login.loginBtn', '登录')}
                     </button>

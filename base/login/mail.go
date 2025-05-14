@@ -17,8 +17,8 @@ import (
 )
 
 var VerificationCodeKey = "verification_code:%s"
-var VerificationCodeSubject = "PPT智能教育平台注册验证码"
-var VerificationCodePlainTextContent = "您好，邮箱验证码为%s\n    验证码10分钟有效期。如非本人操作，请忽略本邮件"
+var VerificationCodeSubject = "注册验证码"
+var VerificationCodePlainTextContent = "您好，邮箱验证码为: %s\n验证码10分钟有效期。如非本人操作，请忽略本邮件"
 
 type MailCallbackRequest struct {
 	Email    string `json:"email"`

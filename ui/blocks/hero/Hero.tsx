@@ -55,7 +55,10 @@ export default function Hero({ hero, children }: { hero: Hero, children: React.R
 
     return (
         <section
-            className={`relative px-4 sm:px-6 lg:px-8 shadow-xl flex ${getTextPositionClasses()} justify-center overflow-hidden`}
+            className={twMerge(
+                `relative px-4 sm:px-6 lg:px-8 shadow-xl flex pt-26 justify-center overflow-hidden`,
+                getTextPositionClasses()
+            )}
             style={{
                 height: getHeightStyle(),
                 backgroundImage: hero.bgImage ? `url(${hero.bgImage})` : 'none',
