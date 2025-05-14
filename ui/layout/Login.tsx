@@ -118,9 +118,15 @@ function MyGoogleLogin({ data }: { data: any }) {
     const onError = () => {
         console.log("error login")
     }
-    return <GoogleOAuthProvider clientId={data.ClientID}>
-        <GoogleLogin onSuccess={onSuccess} onError={onError} />
-    </GoogleOAuthProvider>
+    return (
+        <div className="w-full">
+            <GoogleOAuthProvider clientId={data.ClientID}>
+                <div className="w-full flex justify-center">
+                    <GoogleLogin onSuccess={onSuccess} onError={onError} />
+                </div>
+            </GoogleOAuthProvider>
+        </div>
+    );
 }
 
 // mail登录组件
