@@ -14,9 +14,11 @@ func Gin() *gin.Engine {
 	// 静态文件服务
 	r.Static("/assets", "build")
 	// 设置模板渲染器
-	r.HTMLRender = CreateTemplateRenderer()
+	// r.HTMLRender = CreateTemplateRenderer()
+	// r.Use(SetRendererContextMiddleware(r.HTMLRender.(*TemplateRenderer)))
 
-	r.Use(SetRendererContextMiddleware(r.HTMLRender.(*TemplateRenderer)))
+	r.HTMLRender = CreateGojaTemplateRenderer()
+	r.Use(SetGojaRendererContextMiddleware(r.HTMLRender.(*GojaTemplateRenderer)))
 
 	// CORS 配置
 	corsConfig := cors.Config{
@@ -63,7 +65,7 @@ func Gin() *gin.Engine {
 	return r
 }
 
-func SetRendererContextMiddleware(renderer *TemplateRenderer) gin.HandlerFunc {
+func SetGojaRendererContextMiddleware(renderer *GojaTemplateRenderer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		renderer.SetGinContext(c)
 		c.Next()
