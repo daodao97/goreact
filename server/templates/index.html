@@ -9,7 +9,6 @@
     {{ with .Head }}
     <title>{{ .Title }}</title>
     <meta name="description" content="{{ .Description }}">
-    <link rel="canonical" href="{{ .Canonical }}">
     {{ range .Meta }}
     {{ if ne .Content "" }}
     <meta {{ if ne .Name "" }}name="{{ .Name }}" {{ end }} {{ if ne .Property "" }}property="{{ .Property }}" {{ end }}
