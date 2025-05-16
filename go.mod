@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/daodao97/xgo v0.0.0-20250416024806-6ca66c31dfd6
-	github.com/evanw/esbuild v0.25.2
+	github.com/evanw/esbuild v0.25.4
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-sql-driver/mysql v1.9.2
