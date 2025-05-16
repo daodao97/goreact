@@ -11,5 +11,5 @@ func Privacy(c *gin.Context) {
 }
 
 func TermsOfService(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.html:Privacy.js", map[string]string{"name": "tos"})
+	c.HTML(http.StatusOK, "index.html:Privacy.js", map[string]string{"name": "terms"})
 }

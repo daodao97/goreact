@@ -118,11 +118,49 @@ function MyGoogleLogin({ data }: { data: any }) {
     const onError = () => {
         console.log("error login")
     }
+
+    // 检测当前是否为暗色主题
+    const [isDarkTheme, setIsDarkTheme] = useState(false);
+
+    useEffect(() => {
+        // 初始检测
+        const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        setIsDarkTheme(darkModeMediaQuery.matches || document.documentElement.classList.contains('dark'));
+
+        // 监听系统主题变化
+        const handleChange = (e: MediaQueryListEvent) => setIsDarkTheme(e.matches);
+        darkModeMediaQuery.addEventListener('change', handleChange);
+
+        // 监听网站主题类变化
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                if (mutation.attributeName === 'class') {
+                    setIsDarkTheme(document.documentElement.classList.contains('dark'));
+                }
+            });
+        });
+
+        observer.observe(document.documentElement, { attributes: true });
+
+        return () => {
+            darkModeMediaQuery.removeEventListener('change', handleChange);
+            observer.disconnect();
+        };
+    }, []);
+
     return (
         <div className="w-full">
             <GoogleOAuthProvider clientId={data.ClientID}>
-                <div className="w-full flex justify-center">
-                    <GoogleLogin onSuccess={onSuccess} onError={onError} />
+                <div className="w-full">
+                    <GoogleLogin
+                        onSuccess={onSuccess}
+                        onError={onError}
+                        width="100%"
+                        theme={isDarkTheme ? 'filled_black' : 'outline'}
+                        shape="rectangular"
+                        size="large"
+                        text="continue_with"
+                    />
                 </div>
             </GoogleOAuthProvider>
         </div>
