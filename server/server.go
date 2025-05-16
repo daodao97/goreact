@@ -11,10 +11,14 @@ import (
 func Gin() *gin.Engine {
 	r := xapp.NewGin()
 
-	// 静态文件服务
 	r.Static("/assets", "build")
+
 	// 设置模板渲染器
-	r.HTMLRender = CreateTemplateRenderer()
+	var opts []func(*TemplateOptions)
+	if !xapp.IsDev() {
+		opts = append(opts, WithCache(NewTemplateCache()))
+	}
+	r.HTMLRender = CreateTemplateRenderer(opts...)
 
 	r.Use(SetRendererContextMiddleware(r.HTMLRender.(*TemplateRenderer)))
 
