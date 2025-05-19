@@ -8,6 +8,7 @@ import (
 
 	"github.com/daodao97/goreact/conf"
 	"github.com/daodao97/goreact/model"
+	"github.com/daodao97/xgo/xapp"
 )
 
 //go:embed templates
@@ -39,6 +40,7 @@ type GeneralPayload struct {
 	MicrosoftClarityId string
 	Head               *model.Head
 	Version            string
+	IsDev              bool
 }
 
 func extendPayload(
@@ -56,5 +58,6 @@ func extendPayload(
 		TemplateID:       templateID,
 		Component:        component,
 		InnerHtmlContent: htmlContent,
+		IsDev:            xapp.IsDev(),
 	}
 }

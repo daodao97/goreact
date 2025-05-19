@@ -61,6 +61,24 @@
         })(window, document, "clarity", "script", "{{ .MicrosoftClarityId }}");
     </script>
     {{ end }}
+    {{if .IsDev}}
+    <script>
+        var event = new EventSource("/hmr")
+
+        event.addEventListener('hmr', function () {
+            window.location.reload()
+        })
+
+        event.addEventListener('connect', function (e) {
+            console.log('HMR连接已建立:', e.data)
+        })
+
+        event.addEventListener('error', function () {
+            console.error('HMR连接错误')
+            event.close()
+        })
+    </script>
+    {{end}}
 </body>
 
 </html>

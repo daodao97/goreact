@@ -34,8 +34,6 @@ func CreateTemplateRenderer(opts ...func(*TemplateOptions)) render.HTMLRender {
 		log.Fatal(err)
 	}
 
-	xlog.Info("CreateTemplateRenderer", "tmpl", tmpl)
-
 	options := &TemplateOptions{}
 	for _, opt := range opts {
 		opt(options)

@@ -64,6 +64,10 @@ func Gin() *gin.Engine {
 		c.Next()
 	})
 
+	if xapp.IsDev() {
+		setupDev(r)
+	}
+
 	return r
 }
 

@@ -5,38 +5,68 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/daodao97/xgo/xlog"
 )
 
 // 客户端入口模板
 const clientTemplateFormat = `import { %s } from "@/pages/%s";
-import { renderPage } from "#/core/lib/PageWrapper";
+import { renderPage } from "#/lib/PageWrapper";
 
 renderPage({Component: %s});
 `
 
 // 服务端入口模板
 const serverTemplateFormat = `import { %s } from "@/pages/%s";
-import { createServerRenderer } from "#/core/lib/ServerRender";
+import { createServerRenderer } from "#/lib/ServerRender";
 
 globalThis.Render = createServerRenderer({ Component: %s });
 `
 
-var appEntry = "./frontend/app"
-var serverEntry = "./frontend/server"
-var pagesDir = "./frontend/pages"
-
+var frontendDir = "./frontend"
+var tmpFrontendDir string
+var clientEntry string
+var serverEntry string
+var pagesDir string
+var pwd string
 var buildDir = "./build"
 var buildServerDir = "./build/server"
 
+func init() {
+	pwd, _ = os.Getwd()
+	frontendDir = filepath.Join(pwd, "frontend")
+
+	projectName := filepath.Base(pwd)
+
+	tmpFrontendDir = filepath.Join(os.TempDir(), projectName+"-frontend")
+	clientEntry = filepath.Join(tmpFrontendDir, "app")
+	serverEntry = filepath.Join(tmpFrontendDir, "server")
+	pagesDir = filepath.Join(tmpFrontendDir, "pages")
+}
+
+func BuildCSS() {
+	cmd := exec.Command("npx", "@tailwindcss/cli", "-i", filepath.Join(frontendDir, "css/tailwind-input.css"), "-o", filepath.Join(tmpFrontendDir, "css/tailwind.css"))
+	cmd.Dir = "./"
+	_, err := cmd.CombinedOutput()
+	if err != nil {
+		xlog.Error("tailwindcss"+cmd.String(), xlog.String("err", err.Error()))
+		log.Fatal(err)
+	}
+}
+
 func BuildJS() {
-	os.RemoveAll(buildDir)
-	os.RemoveAll(appEntry)
-	os.RemoveAll(serverEntry)
+	// os.RemoveAll(buildDir)
+	// os.RemoveAll(tmpFrontendDir)
+
+	os.CopyFS(tmpFrontendDir, os.DirFS(frontendDir))
+
+	BuildCSS()
 
 	// 确保目录存在
-	err := ensureDirectories(appEntry, serverEntry)
+	err := ensureDirectories(clientEntry, serverEntry)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -53,8 +83,9 @@ func BuildJS() {
 		log.Fatal(err)
 	}
 
-	err = BuildClientComponents(appEntry, buildDir, map[string]string{
+	err = BuildClientComponents(clientEntry, buildDir, map[string]string{
 		"@": filepath.Join(currentDir, "frontend"),
+		"#": filepath.Join(currentDir, "core", "ui"),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -62,6 +93,7 @@ func BuildJS() {
 
 	_, err = BuildServerComponents(serverEntry, buildServerDir, map[string]string{
 		"@": filepath.Join(currentDir, "frontend"),
+		"#": filepath.Join(currentDir, "core", "ui"),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -138,7 +170,7 @@ func generateEntryFiles() error {
 
 		// 生成客户端入口
 		clientContent := fmt.Sprintf(clientTemplateFormat, componentName, componentName, componentName)
-		clientPath := filepath.Join(appEntry, baseName)
+		clientPath := filepath.Join(clientEntry, baseName)
 		err := os.WriteFile(clientPath, []byte(clientContent), 0644)
 		if err != nil {
 			return fmt.Errorf("写入客户端入口 %s 失败: %w", clientPath, err)

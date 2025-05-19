@@ -3,9 +3,11 @@ package server
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/daodao97/goreact/util"
+	"github.com/daodao97/xgo/xlog"
 	esbuild "github.com/evanw/esbuild/pkg/api"
 )
 
@@ -25,72 +27,40 @@ func aliasPlugin(aliases map[string]string) esbuild.Plugin {
 	return esbuild.Plugin{
 		Name: "alias-resolver",
 		Setup: func(build esbuild.PluginBuild) {
-			build.OnResolve(esbuild.OnResolveOptions{Filter: "^@/"}, func(args esbuild.OnResolveArgs) (esbuild.OnResolveResult, error) {
-				// 将 @/ 替换为实际路径
-				newPath := strings.TrimPrefix(args.Path, "@/")
-				basePath := aliases["@"] + "/" + newPath
+			for alias, path := range aliases {
+				build.OnResolve(esbuild.OnResolveOptions{Filter: "^" + alias + "/"}, func(args esbuild.OnResolveArgs) (esbuild.OnResolveResult, error) {
+					// 将 @/ 替换为实际路径
+					newPath := strings.TrimPrefix(args.Path, alias+"/")
+					basePath := path + "/" + newPath
 
-				// 尝试不同的扩展名
-				extensions := []string{"", ".tsx", ".ts", ".jsx", ".js"}
-				for _, ext := range extensions {
-					fullPath := basePath + ext
-					if _, err := os.Stat(fullPath); err == nil {
-						return esbuild.OnResolveResult{Path: fullPath, External: false}, nil
-					}
-				}
-
-				// 如果找不到文件，尝试作为目录查找 index 文件
-				for _, ext := range extensions[1:] { // 跳过空扩展名
-					fullPath := basePath + "/index" + ext
-					if _, err := os.Stat(fullPath); err == nil {
-						return esbuild.OnResolveResult{Path: fullPath, External: false}, nil
-					}
-				}
-
-				fmt.Printf("路径解析失败: %s -> %s\n", args.Path, basePath)
-				// 返回原始路径，让 esbuild 继续尝试解析
-				return esbuild.OnResolveResult{Path: basePath, External: false}, nil
-			})
-			build.OnResolve(esbuild.OnResolveOptions{Filter: "^#core/"}, func(args esbuild.OnResolveArgs) (esbuild.OnResolveResult, error) {
-				// 将 #core/ 替换为实际路径 ./core/ui/
-				newPath := strings.TrimPrefix(args.Path, "#core/")
-				basePath := "./core/ui/" + newPath // 硬编码目标路径
-
-				// 尝试不同的扩展名
-				extensions := []string{".tsx", ".ts", ".jsx", ".js"} // 优先查找带扩展名的文件
-				for _, ext := range extensions {
-					fullPath := basePath + ext
-					if _, err := os.Stat(fullPath); err == nil {
-						return esbuild.OnResolveResult{Path: fullPath, External: false}, nil
-					}
-				}
-				// 尝试不带扩展名的文件（可能是目录）
-				if _, err := os.Stat(basePath); err == nil {
-					// 检查是否是目录，如果是目录，则尝试 index 文件
-					isDir, _ := os.Stat(basePath)
-					if isDir.IsDir() {
-						for _, ext := range extensions {
-							fullPath := basePath + "/index" + ext
-							if _, err := os.Stat(fullPath); err == nil {
-								return esbuild.OnResolveResult{Path: fullPath, External: false}, nil
-							}
+					// 尝试不同的扩展名
+					extensions := []string{"", ".tsx", ".ts", ".jsx", ".js"}
+					for _, ext := range extensions {
+						fullPath := basePath + ext
+						if _, err := os.Stat(fullPath); err == nil {
+							return esbuild.OnResolveResult{Path: fullPath, External: false}, nil
 						}
-					} else {
-						// 如果是文件，直接返回
-						return esbuild.OnResolveResult{Path: basePath, External: false}, nil
 					}
-				}
 
-				fmt.Printf("核心库路径解析失败: %s -> %s\n", args.Path, basePath)
-				// 返回原始路径，让 esbuild 继续尝试解析或其他插件处理
-				return esbuild.OnResolveResult{Path: args.Path, External: false}, nil // 返回原始路径以便其他解析器处理
-			})
+					// 如果找不到文件，尝试作为目录查找 index 文件
+					for _, ext := range extensions[1:] { // 跳过空扩展名
+						fullPath := basePath + "/index" + ext
+						if _, err := os.Stat(fullPath); err == nil {
+							return esbuild.OnResolveResult{Path: fullPath, External: false}, nil
+						}
+					}
+
+					fmt.Printf("路径解析失败: %s -> %s\n", args.Path, basePath)
+					// 返回原始路径，让 esbuild 继续尝试解析
+					return esbuild.OnResolveResult{Path: basePath, External: false}, nil
+				})
+			}
 		},
 	}
 }
 
 func BuildClientComponents(jsFolder, jsOutput string, aliases map[string]string) error {
-	fmt.Println("Building client Javascript")
+	xlog.Debug("Building client Javascript")
 
 	filesJSX, err := util.GetFiles(jsFolder, ".jsx")
 	if err != nil {
@@ -103,7 +73,9 @@ func BuildClientComponents(jsFolder, jsOutput string, aliases map[string]string)
 	}
 
 	allFiles := append(filesJSX, filesTSX...)
-	allFiles = append(allFiles, "./frontend/app.js")
+	allFiles = append(allFiles, tmpFrontendDir+"/app.js")
+
+	pwd, _ := os.Getwd()
 
 	builds := esbuild.Build(esbuild.BuildOptions{
 		EntryPoints:    allFiles,
@@ -121,22 +93,20 @@ func BuildClientComponents(jsFolder, jsOutput string, aliases map[string]string)
 			".tsx":  esbuild.LoaderTSX,
 			".scss": esbuild.LoaderLocalCSS,
 		},
-		Plugins: []esbuild.Plugin{aliasPlugin(aliases)},
+		Plugins:       []esbuild.Plugin{aliasPlugin(aliases)},
+		NodePaths:     []string{filepath.Join(pwd, "node_modules")},
+		AbsWorkingDir: pwd,
 	})
 
 	if len(builds.Errors) > 0 {
 		return fmt.Errorf("error on esbuild: %v", builds.Errors)
 	}
 
-	for _, file := range builds.OutputFiles {
-		fmt.Println("Created file:", file.Path)
-	}
-
 	return nil
 }
 
 func BuildServerComponents(jsFolder, jsOutput string, aliases map[string]string) (map[string]string, error) {
-	fmt.Println("Building server Javascript")
+	xlog.Debug("Building server Javascript")
 	result := map[string]string{}
 
 	filesJSX, err := util.GetFiles(jsFolder, ".jsx")
@@ -156,6 +126,8 @@ func BuildServerComponents(jsFolder, jsOutput string, aliases map[string]string)
 
 	allFiles := append(filesJSX, filesTSX...)
 
+	pwd, _ := os.Getwd()
+
 	builds := esbuild.Build(esbuild.BuildOptions{
 		EntryPoints: allFiles,
 		Bundle:      true,
@@ -172,7 +144,9 @@ func BuildServerComponents(jsFolder, jsOutput string, aliases map[string]string)
 			".tsx":  esbuild.LoaderTSX,
 			".scss": esbuild.LoaderLocalCSS,
 		},
-		Plugins: []esbuild.Plugin{aliasPlugin(aliases)},
+		Plugins:       []esbuild.Plugin{aliasPlugin(aliases)},
+		NodePaths:     []string{filepath.Join(pwd, "node_modules")},
+		AbsWorkingDir: pwd,
 	})
 
 	if len(builds.Errors) > 0 {

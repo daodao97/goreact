@@ -1,29 +1,20 @@
 {
-	"name": "goreact",
+	"name": "gossr",
 	"version": "1.0.0",
-	"description": "Javascript code to be render with go",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"build:css": "npx @tailwindcss/cli -i ./frontend/css/tailwind-input.css -o ./frontend/css/tailwind.css",
-		"watch:css": "npx @tailwindcss/cli -i ./frontend/css/tailwind-input.css -o ./frontend/css/tailwind.css --watch"
+	"publishConfig": {
+		"access": "public"
 	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/daodao97/goreact.git"
-	},
-	"author": "@daodao97",
-	"license": "MIT",
-	"bugs": {
-		"url": "https://github.com/daodao97/goreact/issues"
-	},
-	"homepage": "https://github.com/daodao97/goreact#readme",
 	"devDependencies": {
 		"@types/react": "^19.0.8",
 		"@types/react-dom": "^19.0.3",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"regenerator-runtime": "^0.14.1",
-		"tailwindcss": "^4.0.15"
+		"tailwindcss": "^4.0.15",
+		"@types/lodash-es": "^4.17.12",
+		"@types/marked": "^5.0.2",
+		"@tailwindcss/cli": "^4.0.15",
+		"@tailwindcss/postcss": "^4.0.15"
 	},
 	"dependencies": {
 		"@radix-ui/react-dialog": "^1.1.6",
@@ -31,10 +22,6 @@
 		"@radix-ui/react-select": "^2.1.7",
 		"@radix-ui/themes": "^3.2.1",
 		"@react-oauth/google": "^0.12.1",
-		"@tailwindcss/cli": "^4.0.15",
-		"@tailwindcss/postcss": "^4.0.15",
-		"@types/lodash-es": "^4.17.12",
-		"@types/marked": "^5.0.2",
 		"clsx": "^2.1.1",
 		"jwt-decode": "^4.0.0",
 		"lodash-es": "^4.17.21",
@@ -47,7 +34,47 @@
 		"tailwind-merge": "^3.0.2"
 	},
 	"type": "module",
+	"main": "./ui/index.js",
+	"module": "./ui/index.js",
+	"types": "./ui/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./ui/index.js",
+			"require": "./ui/index.js",
+			"types": "./ui/index.d.ts"
+		},
+		"./components/*": {
+			"import": "./ui/components/*",
+			"require": "./ui/components/*",
+			"types": "./ui/components/*.d.ts"
+		},
+		"./lib/*": {
+			"import": "./ui/lib/*",
+			"require": "./ui/lib/*",
+			"types": "./ui/lib/*.d.ts"
+		},
+		"./style/*": {
+			"import": "./ui/style/*",
+			"require": "./ui/style/*"
+		},
+		"./blocks/*": {
+			"import": "./ui/blocks/*",
+			"require": "./ui/blocks/*",
+			"types": "./ui/blocks/*.d.ts"
+		},
+		"./layout/*": {
+			"import": "./ui/layout/*",
+			"require": "./ui/layout/*",
+			"types": "./ui/layout/*.d.ts"
+		},
+		"./package.json": "./package.json"
+	},
 	"imports": {
 		"#ui/*": "./ui/*"
-	}
+	},
+	"style": "ui/style/tailwind.css",
+	"files": [
+		"ui",
+		"package.json"
+	]
 }
