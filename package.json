@@ -57,6 +57,10 @@
 			"import": "./ui/style/*",
 			"require": "./ui/style/*"
 		},
+		"./style/tailwind.css": {
+			"import": "./ui/style/tailwind.css",
+			"require": "./ui/style/tailwind.css"
+		},
 		"./blocks/*": {
 			"import": "./ui/blocks/*",
 			"require": "./ui/blocks/*",
