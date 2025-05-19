@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/daodao97/goreact/i18n"
 	"github.com/daodao97/xgo/xlog"
 	"github.com/gin-gonic/gin"
 
@@ -36,7 +37,7 @@ func setupDev(r *gin.Engine) {
 		xlog.Debug("HMR init: start watch locales dir")
 		localesDir := filepath.Join(".", "locales")
 		watchDir(localesDir, func(event fsnotify.Event) {
-			BuildJS()
+			i18n.InitI18n()
 			xlog.Debug("locales dir changed, prepare send hmr event", xlog.Any("event", event))
 			hmrBroadcast <- "hmr"
 			xlog.Debug("locales dir changed, send hmr event")
