@@ -24,7 +24,7 @@ type MailCallbackRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Code     string `json:"verificationCode"`
-	Mode     string `json:"mode"`
+	Mode     string `json:"mode"` // register or login or reset
 }
 
 func MailCallbackHandler(c *gin.Context) {
@@ -43,6 +43,8 @@ func MailCallbackHandler(c *gin.Context) {
 		user, err = Register(request.Email, request.Password, request.Code)
 	} else if request.Mode == "login" {
 		user, err = Login(request.Email, request.Password, request.Code)
+	} else if request.Mode == "reset" {
+		user, err = ResetPassword(request.Email, request.Password, request.Code)
 	}
 
 	if err != nil {
@@ -111,6 +113,35 @@ func Login(email string, password string, code string) (_user xdb.Record, err er
 
 	if !xadmin.PasswordVerify(password, user.GetString("password")) {
 		return nil, errors.New("invalid password")
+	}
+
+	return xdb.Record{
+		"id":         user.GetInt("id"),
+		"email":      user.GetString("email"),
+		"user_name":  user.GetString("user_name"),
+		"avatar_url": user.GetString("avatar_url"),
+	}, nil
+}
+
+func ResetPassword(email string, password string, code string) (_user xdb.Record, err error) {
+	err = VerifyCode(email, code)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := UserModel.First(xdb.WhereEq("email", email), xdb.WhereEq("appid", conf.Get().AppID))
+	if err != nil && err != xdb.ErrNotFound {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
+	_, err = UserModel.Update(xdb.Record{
+		"password": xadmin.PasswordHash(password),
+	}, xdb.WhereEq("id", user.GetInt("id")))
+	if err != nil {
+		return nil, err
 	}
 
 	return xdb.Record{

@@ -169,7 +169,7 @@ function MyGoogleLogin({ data }: { data: any }) {
 
 // mail登录组件
 function MailLogin({ data }: { data: any }) {
-    const [mode, setMode] = useState<'login' | 'register'>('login');
+    const [mode, setMode] = useState<'login' | 'register' | 'reset'>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
@@ -276,7 +276,7 @@ function MailLogin({ data }: { data: any }) {
             return;
         }
 
-        if (mode === 'register' && !verificationCode) {
+        if ((mode === 'register' || mode === 'reset') && !verificationCode) {
             setErrorMsg(t('root.login.verificationCodeRequired', '请输入验证码'));
             return;
         }
@@ -291,7 +291,9 @@ function MailLogin({ data }: { data: any }) {
             body: JSON.stringify(
                 mode === 'register'
                     ? { email, password, verificationCode, mode: 'register' }
-                    : { email, password, mode: 'login' }
+                    : mode === 'reset'
+                        ? { email, password, verificationCode, mode: 'reset' }
+                        : { email, password, mode: 'login' }
             ),
         })
             .then(res => {
@@ -307,7 +309,9 @@ function MailLogin({ data }: { data: any }) {
                         setLoading(false);
                         const msg = mode === 'register'
                             ? t('root.login.registerFailed', '注册失败')
-                            : t('root.login.loginFailed', '登录失败');
+                            : mode === 'reset'
+                                ? t('root.login.resetFailed', '重置密码失败')
+                                : t('root.login.loginFailed', '登录失败');
                         setErrorMsg(data.message || msg);
                     });
                 }
@@ -350,9 +354,20 @@ function MailLogin({ data }: { data: any }) {
                         placeholder={t('root.login.passwordPlaceholder', '请输入密码')}
                         required
                     />
+                    {mode === 'login' && (
+                        <div className="text-right mt-1">
+                            <button
+                                type="button"
+                                onClick={() => setMode('reset')}
+                                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 focus:outline-none"
+                            >
+                                {t('root.login.forgotPassword', '忘记密码')}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                {mode === 'register' && (
+                {(mode === 'register' || mode === 'reset') && (
                     <div>
                         <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {t('root.login.verificationCode', '验证码')}
@@ -400,22 +415,36 @@ function MailLogin({ data }: { data: any }) {
                         <span>{t('root.login.processing', '处理中...')}</span>
                     ) : mode === 'register' ? (
                         t('root.login.registerBtn', '注册')
+                    ) : mode === 'reset' ? (
+                        t('root.login.resetBtn', '重置密码')
                     ) : (
                         t('root.login.loginBtn', '登录')
                     )}
                 </button>
 
                 <div className="text-center text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">
-                        {mode === 'login' ? t('root.login.noAccount', '还没有账号？') : t('root.login.hasAccount', '已有账号？')}
-                    </span>
-                    <button
-                        type="button"
-                        onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                        className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 focus:outline-none"
-                    >
-                        {mode === 'login' ? t('root.login.registerBtn', '注册') : t('root.login.loginBtn', '登录')}
-                    </button>
+                    {mode === 'reset' ? (
+                        <button
+                            type="button"
+                            onClick={() => setMode('login')}
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 focus:outline-none"
+                        >
+                            {t('root.login.backToLogin', '返回登录')}
+                        </button>
+                    ) : (
+                        <>
+                            <span className="text-gray-600 dark:text-gray-400">
+                                {mode === 'login' ? t('root.login.noAccount', '还没有账号？') : t('root.login.hasAccount', '已有账号？')}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                                className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 focus:outline-none"
+                            >
+                                {mode === 'login' ? t('root.login.registerBtn', '注册') : t('root.login.loginBtn', '登录')}
+                            </button>
+                        </>
+                    )}
                 </div>
             </form>
         </div>
