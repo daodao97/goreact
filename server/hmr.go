@@ -31,6 +31,18 @@ func setupDev(r *gin.Engine) {
 		})
 	}()
 
+	// 监听 locale 目录, 有变动就重新构建
+	go func() {
+		xlog.Debug("HMR init: start watch locales dir")
+		localesDir := filepath.Join(".", "locales")
+		watchDir(localesDir, func(event fsnotify.Event) {
+			BuildJS()
+			xlog.Debug("locales dir changed, prepare send hmr event", xlog.Any("event", event))
+			hmrBroadcast <- "hmr"
+			xlog.Debug("locales dir changed, send hmr event")
+		})
+	}()
+
 	r.GET("/hmr", func(c *gin.Context) {
 		xlog.Debug("receive hmr connection request")
 		c.Writer.Header().Set("Content-Type", "text/event-stream")
