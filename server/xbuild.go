@@ -48,7 +48,7 @@ func init() {
 }
 
 func BuildCSS() {
-	cmd := exec.Command("npx", "@tailwindcss/cli", "-i", filepath.Join(frontendDir, "css/tailwind-input.css"), "-o", filepath.Join(tmpFrontendDir, "css/tailwind.css"))
+	cmd := exec.Command("npx", "@tailwindcss/cli", "-i", filepath.Join(frontendDir, "css/tailwind-input.css"), "-o", filepath.Join(tmpFrontendDir, "css/tailwind.css"), "--postcss")
 	cmd.Dir = "./"
 	_, err := cmd.CombinedOutput()
 	if err != nil {
@@ -58,8 +58,18 @@ func BuildCSS() {
 }
 
 func BuildJS() {
-	// os.RemoveAll(buildDir)
-	// os.RemoveAll(tmpFrontendDir)
+	os.RemoveAll(buildDir)
+	os.RemoveAll(tmpFrontendDir)
+	// check node_modules
+	if _, err := os.Stat(filepath.Join(tmpFrontendDir, "node_modules")); os.IsNotExist(err) {
+		cmd := exec.Command("bun", "install")
+		cmd.Dir = "./"
+		log.Println("install node_modules")
+		_, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	os.CopyFS(tmpFrontendDir, os.DirFS(frontendDir))
 
@@ -85,7 +95,7 @@ func BuildJS() {
 
 	err = BuildClientComponents(clientEntry, buildDir, map[string]string{
 		"@": filepath.Join(currentDir, "frontend"),
-		"#": filepath.Join(currentDir, "core", "ui"),
+		"#": filepath.Join(currentDir, "node_modules", "gossr", "ui"),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -93,7 +103,7 @@ func BuildJS() {
 
 	_, err = BuildServerComponents(serverEntry, buildServerDir, map[string]string{
 		"@": filepath.Join(currentDir, "frontend"),
-		"#": filepath.Join(currentDir, "core", "ui"),
+		"#": filepath.Join(currentDir, "node_modules", "gossr", "ui"),
 	})
 	if err != nil {
 		log.Fatal(err)
