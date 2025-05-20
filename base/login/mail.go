@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/daodao97/goreact/conf"
+	"github.com/daodao97/goreact/util/mail"
 	"github.com/daodao97/xgo/xadmin"
 	"github.com/daodao97/xgo/xdb"
 	"github.com/daodao97/xgo/xlog"
@@ -19,6 +20,34 @@ import (
 var VerificationCodeKey = "verification_code:%s"
 var VerificationCodeSubject = "注册验证码"
 var VerificationCodePlainTextContent = "您好，邮箱验证码为: %s\n验证码10分钟有效期。如非本人操作，请忽略本邮件"
+
+var VerificationCodeMailSender *CodeSender
+
+func SetVerificationCodeMailSender(sender *CodeSender) {
+	if sender.Subject == "" {
+		sender.Subject = VerificationCodeSubject
+	}
+	if sender.PlainTextContent == "" {
+		sender.PlainTextContent = VerificationCodePlainTextContent
+	}
+	VerificationCodeMailSender = sender
+}
+
+func GetVerificationCodeMailSender() *CodeSender {
+	return VerificationCodeMailSender
+}
+
+type CodeSender struct {
+	From             string
+	Subject          string
+	PlainTextContent string
+	HtmlContent      string
+	MailSender       mail.MailSender
+}
+
+func (c *CodeSender) Send(to string, code string) error {
+	return c.MailSender.SendEmail(c.From, to, c.Subject, fmt.Sprintf(c.PlainTextContent, code), c.HtmlContent)
+}
 
 type MailCallbackRequest struct {
 	Email    string `json:"email"`
@@ -206,8 +235,12 @@ func GenerateVerificationCode() string {
 }
 
 func SendVerificationCode(email string) error {
+	if VerificationCodeMailSender == nil {
+		return errors.New("verification code mail sender not set")
+	}
 	code := GenerateVerificationCode()
-	err := GetMailSender().SendVerificationCode(email, VerificationCodeSubject, fmt.Sprintf(VerificationCodePlainTextContent, code))
+
+	err := VerificationCodeMailSender.Send(email, code)
 	if err != nil {
 		return err
 	}

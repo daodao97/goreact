@@ -95,7 +95,7 @@ func BuildJS() {
 
 	err = BuildClientComponents(clientEntry, buildDir, map[string]string{
 		"@": filepath.Join(currentDir, "frontend"),
-		"#": filepath.Join(currentDir, "node_modules", "gossr", "ui"),
+		"#": filepath.Join(currentDir, "node_modules", "goreact", "ui"),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -103,7 +103,7 @@ func BuildJS() {
 
 	_, err = BuildServerComponents(serverEntry, buildServerDir, map[string]string{
 		"@": filepath.Join(currentDir, "frontend"),
-		"#": filepath.Join(currentDir, "node_modules", "gossr", "ui"),
+		"#": filepath.Join(currentDir, "node_modules", "goreact", "ui"),
 	})
 	if err != nil {
 		log.Fatal(err)
