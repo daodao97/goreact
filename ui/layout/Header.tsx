@@ -404,11 +404,11 @@ const MobileMenu = ({
                             gap: '4px'
                         }}>
                             {(navItems || []).filter((nav) => !nav.IsLogin || isLoggedIn).map((nav) => {
-                                const isActive = matchPath(nav.URL, window.location.pathname);
+                                const isActive = matchPath(nav.url, window.location.pathname);
                                 return (
                                     <a
-                                        key={nav.Text}
-                                        href={getUrlWithLang(nav.URL)}
+                                        key={nav.text}
+                                        href={getUrlWithLang(nav.url)}
                                         onClick={onClose}
                                         style={{
                                             display: 'block',
@@ -424,7 +424,7 @@ const MobileMenu = ({
                                             transition: 'background-color 0.2s, color 0.2s'
                                         }}
                                     >
-                                        {t(nav.Text, nav.Text)}
+                                        {t(nav.text, nav.text)}
                                     </a>
                                 );
                             })}
