@@ -21,12 +21,17 @@ type Hero = {
 
 export default function Hero({ hero, children }: { hero: Hero, children: React.ReactNode }) {
     const [windowHeight, setWindowHeight] = useState<string>("100vh");
+    const [isMobile, setIsMobile] = useState<boolean>(false);
 
     useEffect(() => {
-        const updateHeight = () => setWindowHeight(`${window.innerHeight}px`);
-        updateHeight();
-        window.addEventListener('resize', updateHeight);
-        return () => window.removeEventListener('resize', updateHeight);
+        const updateDimensions = () => {
+            setWindowHeight(`${window.innerHeight}px`);
+            setIsMobile(window.innerWidth < 640); // sm断点以下视为移动设备
+        };
+
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
+        return () => window.removeEventListener('resize', updateDimensions);
     }, []);
 
     const getTextPositionClasses = () => {
@@ -49,7 +54,7 @@ export default function Hero({ hero, children }: { hero: Hero, children: React.R
                 return windowHeight;
             case 'small':
             default:
-                return '50vh';
+                return isMobile ? '70vh' : '50vh';
         }
     };
 
@@ -75,7 +80,7 @@ export default function Hero({ hero, children }: { hero: Hero, children: React.R
             )}
 
             <div className="max-w-4xl mx-auto text-center relative z-10">
-                <h1 className="text-4xl sm:text-5xl font-extrabold mb-6 tracking-tight text-white">
+                <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold mb-6 tracking-tight text-white">
                     {hero.title}
                 </h1>
                 {hero.buttons && (
@@ -98,7 +103,7 @@ export default function Hero({ hero, children }: { hero: Hero, children: React.R
                         ))}
                     </div>
                 )}
-                <p className="text-xl text-white/90 mb-6 max-w-3xl mx-auto">
+                <p className="text-sm sm:text-lg md:text-xl text-white/90 mb-6 max-w-3xl mx-auto">
                     {hero.description}
                 </p>
 

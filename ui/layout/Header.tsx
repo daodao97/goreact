@@ -289,107 +289,55 @@ const MobileMenu = ({
             {/* 遮罩层 */}
             {isOpen && (
                 <div
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                        backdropFilter: 'blur(4px)',
-                        zIndex: 9999
-                    }}
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999]"
                     onClick={onClose}
                 />
             )}
 
             {/* 侧边抽屉 */}
-            <div style={{
-                position: 'fixed',
-                top: 0,
-                right: 0,
-                bottom: 0,
-                width: '280px',
-                backgroundColor: isDarkTheme ? '#111827' : '#ffffff',
-                transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
-                transition: 'transform 0.3s ease-in-out',
-                zIndex: 10000,
-                boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
-                display: 'flex',
-                flexDirection: 'column'
-            }}>
+            <div className={`fixed top-0 right-0 bottom-0 w-[280px] h-screen ${isDarkTheme ? 'bg-gray-900' : 'bg-white'} 
+                ${isOpen ? 'translate-x-0' : 'translate-x-full'} transition-transform duration-300 ease-in-out z-[10000] 
+                shadow-[-4px_0_10px_rgba(0,0,0,0.1)] flex flex-col`}>
+
                 {/* 抽屉头部 */}
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '16px',
-                    borderBottom: isDarkTheme ? '1px solid #374151' : '1px solid #e5e7eb'
-                }}>
-                    <h2 style={{
-                        fontSize: '18px',
-                        fontWeight: 600,
-                        color: isDarkTheme ? '#ffffff' : '#111827'
-                    }}>
+                <div className={`flex items-center justify-between p-4 ${isDarkTheme ? 'border-gray-700' : 'border-gray-200'} border-b`}>
+                    <h2 className={`text-lg font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
                         {t('menu', '菜单')}
                     </h2>
                     <button
                         onClick={onClose}
-                        style={{
-                            padding: '8px',
-                            borderRadius: '6px',
-                            color: isDarkTheme ? '#9ca3af' : '#6b7280',
-                            cursor: 'pointer',
-                            background: 'transparent',
-                            border: 'none'
-                        }}
+                        className={`p-2 rounded-md ${isDarkTheme ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'} 
+                            cursor-pointer bg-transparent border-none`}
                         aria-label="关闭菜单"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
                 {/* 抽屉内容 */}
-                <div style={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    padding: '16px'
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '24px'
-                    }}>
+                <div className="flex-1 overflow-y-auto p-4">
+                    <div className="flex flex-col gap-6">
                         {/* 主题切换 */}
                         <button
                             onClick={() => {
                                 toggleTheme();
                                 onClose();
                             }}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                width: '100%',
-                                color: isDarkTheme ? '#e5e7eb' : '#4b5563',
-                                background: 'transparent',
-                                border: 'none',
-                                padding: '8px 0',
-                                cursor: 'pointer',
-                                textAlign: 'left'
-                            }}
+                            className={`flex items-center w-full ${isDarkTheme ? 'text-gray-200' : 'text-gray-600'} 
+                                bg-transparent border-none py-2 cursor-pointer text-left`}
                         >
                             {isDarkTheme ? (
                                 <>
-                                    <svg style={{ width: '20px', height: '20px', marginRight: '12px' }} fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
                                     </svg>
                                     {t('theme.light', '切换为亮色模式')}
                                 </>
                             ) : (
                                 <>
-                                    <svg style={{ width: '20px', height: '20px', marginRight: '12px' }} fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
                                     </svg>
                                     {t('theme.dark', '切换为暗色模式')}
@@ -398,11 +346,7 @@ const MobileMenu = ({
                         </button>
 
                         {/* 导航链接 */}
-                        <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '4px'
-                        }}>
+                        <div className="flex flex-col gap-1">
                             {(navItems || []).filter((nav) => !nav.IsLogin || isLoggedIn).map((nav) => {
                                 const isActive = matchPath(nav.url, window.location.pathname);
                                 return (
@@ -410,19 +354,10 @@ const MobileMenu = ({
                                         key={nav.text}
                                         href={getUrlWithLang(nav.url)}
                                         onClick={onClose}
-                                        style={{
-                                            display: 'block',
-                                            padding: '8px 12px',
-                                            borderRadius: '6px',
-                                            backgroundColor: isActive
-                                                ? (isDarkTheme ? 'rgba(217, 119, 6, 0.1)' : '#fff7ed')
-                                                : 'transparent',
-                                            color: isActive
-                                                ? '#d97706'
-                                                : (isDarkTheme ? '#e5e7eb' : '#4b5563'),
-                                            textDecoration: 'none',
-                                            transition: 'background-color 0.2s, color 0.2s'
-                                        }}
+                                        className={`block px-3 py-2 rounded-md transition-colors 
+                                            ${isActive
+                                                ? (isDarkTheme ? 'bg-amber-700/10 text-amber-600' : 'bg-amber-50 text-amber-600')
+                                                : (isDarkTheme ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100')}`}
                                     >
                                         {t(nav.text, nav.text)}
                                     </a>
@@ -432,24 +367,11 @@ const MobileMenu = ({
 
                         {/* 语言切换 */}
                         {multiLang && (
-                            <div style={{
-                                paddingTop: '16px',
-                                paddingBottom: '16px',
-                                borderTop: isDarkTheme ? '1px solid #374151' : '1px solid #e5e7eb'
-                            }}>
-                                <h3 style={{
-                                    fontSize: '14px',
-                                    fontWeight: 500,
-                                    color: isDarkTheme ? '#9ca3af' : '#6b7280',
-                                    marginBottom: '12px'
-                                }}>
+                            <div className={`py-4 ${isDarkTheme ? 'border-gray-700' : 'border-gray-200'} border-t`}>
+                                <h3 className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'} mb-3`}>
                                     {t('language', '语言')}
                                 </h3>
-                                <div style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '8px'
-                                }}>
+                                <div className="flex flex-col gap-2">
                                     {supportedLangs.map((lang) => {
                                         const isActive = currentLang === lang;
                                         return (
@@ -459,27 +381,15 @@ const MobileMenu = ({
                                                     changeLanguage(lang);
                                                     onClose();
                                                 }}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    width: '100%',
-                                                    padding: '8px 12px',
-                                                    borderRadius: '6px',
-                                                    backgroundColor: isActive
-                                                        ? (isDarkTheme ? 'rgba(217, 119, 6, 0.1)' : '#fff7ed')
-                                                        : 'transparent',
-                                                    color: isActive
-                                                        ? '#d97706'
-                                                        : (isDarkTheme ? '#e5e7eb' : '#4b5563'),
-                                                    border: 'none',
-                                                    textAlign: 'left',
-                                                    cursor: 'pointer'
-                                                }}
+                                                className={`flex items-center justify-between w-full px-3 py-2 rounded-md 
+                                                    ${isActive
+                                                        ? (isDarkTheme ? 'bg-amber-700/10 text-amber-600' : 'bg-amber-50 text-amber-600')
+                                                        : (isDarkTheme ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100')}
+                                                    border-none text-left cursor-pointer`}
                                             >
                                                 <span>{supportedLangsMap[lang]}</span>
                                                 {isActive && (
-                                                    <svg style={{ width: '20px', height: '20px' }} viewBox="0 0 20 20" fill="currentColor">
+                                                    <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                                     </svg>
                                                 )}
@@ -493,13 +403,10 @@ const MobileMenu = ({
                 </div>
 
                 {/* 抽屉底部 */}
-                <div style={{
-                    padding: '16px',
-                    borderTop: isDarkTheme ? '1px solid #374151' : '1px solid #e5e7eb'
-                }}>
+                <div className={`p-4 ${isDarkTheme ? 'border-gray-700' : 'border-gray-200'} border-t`}>
                     {isLoggedIn ? (
                         <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mb-3">
                                 {userInfo?.avatar_url ? (
                                     <img
                                         src={userInfo.avatar_url}
@@ -518,18 +425,8 @@ const MobileMenu = ({
                                     handleLogout();
                                     onClose();
                                 }}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 16px',
-                                    borderRadius: '6px',
-                                    backgroundColor: isDarkTheme ? '#1f2937' : '#f3f4f6',
-                                    color: isDarkTheme ? '#e5e7eb' : '#4b5563',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: 500,
-                                    textAlign: 'center'
-                                }}
+                                className={`w-full py-2 px-4 rounded-md ${isDarkTheme ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-600'} 
+                                    border-none cursor-pointer text-sm font-medium text-center`}
                             >
                                 {t('root.logout_button', 'Logout')}
                             </button>
@@ -540,19 +437,8 @@ const MobileMenu = ({
                                 showLoginModal();
                                 onClose();
                             }}
-                            style={{
-                                width: '100%',
-                                padding: '8px 16px',
-                                borderRadius: '6px',
-                                backgroundColor: isDarkTheme ? '#d97706' : '#f59e0b',
-                                color: 'white',
-                                border: 'none',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                fontWeight: 500,
-                                textAlign: 'center',
-                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
-                            }}
+                            className={`w-full py-2 px-4 rounded-md ${isDarkTheme ? 'bg-amber-600' : 'bg-amber-500'} 
+                                text-white border-none cursor-pointer text-sm font-medium text-center shadow`}
                         >
                             {t('root.login_button', 'Login')}
                         </button>
@@ -608,10 +494,11 @@ export function Header() {
             }
         };
 
-        // 确保在下一个渲染周期后再添加事件监听器
-        setTimeout(() => {
-            window.addEventListener('scroll', handleScroll);
-        }, 100);
+        // 页面加载时立即检查滚动位置，处理带锚点刷新的情况
+        handleScroll();
+
+        // 添加滚动事件监听器
+        window.addEventListener('scroll', handleScroll);
 
         return () => {
             window.removeEventListener('scroll', handleScroll);
