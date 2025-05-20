@@ -223,7 +223,7 @@ const UserMenu = ({ isLoggedIn, userInfo, handleLogout, isScrolled }: { isLogged
             </DropdownMenu.Trigger>
             <DropdownMenu.Content variant="soft" align="end">
                 <DropdownMenu.Item>
-                    <span className="text-sm font-medium">{userInfo.user_name || userInfo.user_email}</span>
+                    <span className="text-sm font-medium">{userInfo.user_name || userInfo.email}</span>
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item onClick={handleLogout}>
@@ -511,7 +511,7 @@ const MobileMenu = ({
                                         {(userInfo?.user_name || '').charAt(0).toUpperCase()}
                                     </div>
                                 )}
-                                <span className="text-sm font-medium">{userInfo.user_name || userInfo.user_email}</span>
+                                <span className="text-sm font-medium">{userInfo.user_name || userInfo.email}</span>
                             </div>
                             <button
                                 onClick={() => {
