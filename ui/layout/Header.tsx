@@ -500,7 +500,17 @@ const MobileMenu = ({
                     {isLoggedIn ? (
                         <div>
                             <div className="flex items-center gap-2">
-                                <img src={userInfo.avatar_url} alt="avatar" className="w-8 h-8 rounded-full" />
+                                {userInfo?.avatar_url ? (
+                                    <img
+                                        src={userInfo.avatar_url}
+                                        alt="avatar"
+                                        className="h-8 w-8 rounded-full"
+                                    />
+                                ) : (
+                                    <div className="h-8 w-8 rounded-full bg-amber-600 flex items-center justify-center text-white">
+                                        {(userInfo?.user_name || '').charAt(0).toUpperCase()}
+                                    </div>
+                                )}
                                 <span className="text-sm font-medium">{userInfo.user_name || userInfo.user_email}</span>
                             </div>
                             <button
