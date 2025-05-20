@@ -222,6 +222,9 @@ const UserMenu = ({ isLoggedIn, userInfo, handleLogout, isScrolled }: { isLogged
                 </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content variant="soft" align="end">
+                <DropdownMenu.Item>
+                    <span className="text-sm font-medium">{userInfo.user_name || userInfo.user_email}</span>
+                </DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item onClick={handleLogout}>
                     {t('root.logout_button', 'Logout')}
@@ -247,7 +250,8 @@ const MobileMenu = ({
     supportedLangsMap,
     currentLang,
     changeLanguage,
-    handleLogout
+    handleLogout,
+    userInfo
 }: {
     isOpen: boolean;
     onClose: () => void;
@@ -260,120 +264,292 @@ const MobileMenu = ({
     currentLang: string;
     changeLanguage: (lang: string) => void;
     handleLogout: () => void;
+    userInfo: any;
 }) => {
-    if (!isOpen) return null;
-
     const multiLang = supportedLangs.length > 1;
 
+    // 创建抽屉的容器元素，确保其附加到body上，避免受到父元素样式影响
+    useEffect(() => {
+        // 创建抽屉容器
+        if (isOpen && typeof document !== 'undefined') {
+            // 防止滚动
+            document.body.style.overflow = 'hidden';
+        }
+
+        return () => {
+            // 清理
+            if (typeof document !== 'undefined') {
+                document.body.style.overflow = '';
+            }
+        };
+    }, [isOpen]);
+
     return (
-        <div className="md:hidden bg-black/90 backdrop-blur-md shadow-lg fixed left-0 right-0 top-16 bottom-0 z-50 py-4 px-6 overflow-y-auto">
-            <div className="flex flex-col space-y-4">
-                <div className="flex justify-end">
+        <>
+            {/* 遮罩层 */}
+            {isOpen && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        backdropFilter: 'blur(4px)',
+                        zIndex: 9999
+                    }}
+                    onClick={onClose}
+                />
+            )}
+
+            {/* 侧边抽屉 */}
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: '280px',
+                backgroundColor: isDarkTheme ? '#111827' : '#ffffff',
+                transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
+                transition: 'transform 0.3s ease-in-out',
+                zIndex: 10000,
+                boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
+                display: 'flex',
+                flexDirection: 'column'
+            }}>
+                {/* 抽屉头部 */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '16px',
+                    borderBottom: isDarkTheme ? '1px solid #374151' : '1px solid #e5e7eb'
+                }}>
+                    <h2 style={{
+                        fontSize: '18px',
+                        fontWeight: 600,
+                        color: isDarkTheme ? '#ffffff' : '#111827'
+                    }}>
+                        {t('menu', '菜单')}
+                    </h2>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-amber-600 transition-colors"
+                        style={{
+                            padding: '8px',
+                            borderRadius: '6px',
+                            color: isDarkTheme ? '#9ca3af' : '#6b7280',
+                            cursor: 'pointer',
+                            background: 'transparent',
+                            border: 'none'
+                        }}
                         aria-label="关闭菜单"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
-                {/* 主题切换选项 */}
-                <button
-                    onClick={() => {
-                        toggleTheme();
-                        onClose();
-                    }}
-                    className="flex items-center text-gray-100 hover:text-amber-600 py-2 font-medium text-sm transition-colors"
-                >
-                    {isDarkTheme ? (
-                        <>
-                            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
-                            </svg>
-                            {t('theme.light', '切换为亮色模式')}
-                        </>
-                    ) : (
-                        <>
-                            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                            </svg>
-                            {t('theme.dark', '切换为暗色模式')}
-                        </>
-                    )}
-                </button>
-
-                {/* 导航链接 */}
-                {(navItems || []).filter((nav) => !nav.IsLogin || isLoggedIn).map((nav) => (
-                    <a key={nav.Text}
-                        href={getUrlWithLang(nav.URL)}
-                        onClick={onClose}
-                        className={`hover:text-amber-600 py-2 font-medium text-sm transition-colors ${matchPath(nav.URL, window.location.pathname) ? 'text-amber-600' : 'text-gray-100'}`}>
-                        {t(nav.Text, nav.Text)}
-                    </a>
-                ))}
-
-                {(navItems || []).length > 0 && (
-                    <div className="border-t border-gray-200 my-2"></div>
-                )}
-
-                {/* 语言切换 */}
-                {multiLang && (
-                    <div className="py-2">
-                        <p className="text-sm text-gray-400 mb-2">{t('language', 'Language')}</p>
-                        <div className="flex flex-col space-y-2">
-                            {supportedLangs.map((lang) => (
-                                <button
-                                    key={lang}
-                                    onClick={() => {
-                                        changeLanguage(lang);
-                                        onClose();
-                                    }}
-                                    className={`text-left py-1 ${currentLang === lang ? 'text-amber-600 font-medium' : 'text-gray-300'}`}
-                                >
-                                    {supportedLangsMap[lang]}
-                                    {currentLang === lang && (
-                                        <span className="ml-2">✓</span>
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {multiLang && (
-                    <div className="border-t border-gray-200 my-2"></div>
-                )}
-
-                {isLoggedIn ? (
-                    <div className="flex flex-col space-y-2">
+                {/* 抽屉内容 */}
+                <div style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    padding: '16px'
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '24px'
+                    }}>
+                        {/* 主题切换 */}
                         <button
                             onClick={() => {
-                                handleLogout();
+                                toggleTheme();
                                 onClose();
                             }}
-                            className="text-left text-gray-100 hover:text-amber-600 py-1"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                width: '100%',
+                                color: isDarkTheme ? '#e5e7eb' : '#4b5563',
+                                background: 'transparent',
+                                border: 'none',
+                                padding: '8px 0',
+                                cursor: 'pointer',
+                                textAlign: 'left'
+                            }}
                         >
-                            {t('root.logout_button', 'Logout')}
+                            {isDarkTheme ? (
+                                <>
+                                    <svg style={{ width: '20px', height: '20px', marginRight: '12px' }} fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
+                                    </svg>
+                                    {t('theme.light', '切换为亮色模式')}
+                                </>
+                            ) : (
+                                <>
+                                    <svg style={{ width: '20px', height: '20px', marginRight: '12px' }} fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                                    </svg>
+                                    {t('theme.dark', '切换为暗色模式')}
+                                </>
+                            )}
                         </button>
+
+                        {/* 导航链接 */}
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px'
+                        }}>
+                            {(navItems || []).filter((nav) => !nav.IsLogin || isLoggedIn).map((nav) => {
+                                const isActive = matchPath(nav.URL, window.location.pathname);
+                                return (
+                                    <a
+                                        key={nav.Text}
+                                        href={getUrlWithLang(nav.URL)}
+                                        onClick={onClose}
+                                        style={{
+                                            display: 'block',
+                                            padding: '8px 12px',
+                                            borderRadius: '6px',
+                                            backgroundColor: isActive
+                                                ? (isDarkTheme ? 'rgba(217, 119, 6, 0.1)' : '#fff7ed')
+                                                : 'transparent',
+                                            color: isActive
+                                                ? '#d97706'
+                                                : (isDarkTheme ? '#e5e7eb' : '#4b5563'),
+                                            textDecoration: 'none',
+                                            transition: 'background-color 0.2s, color 0.2s'
+                                        }}
+                                    >
+                                        {t(nav.Text, nav.Text)}
+                                    </a>
+                                );
+                            })}
+                        </div>
+
+                        {/* 语言切换 */}
+                        {multiLang && (
+                            <div style={{
+                                paddingTop: '16px',
+                                paddingBottom: '16px',
+                                borderTop: isDarkTheme ? '1px solid #374151' : '1px solid #e5e7eb'
+                            }}>
+                                <h3 style={{
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                    color: isDarkTheme ? '#9ca3af' : '#6b7280',
+                                    marginBottom: '12px'
+                                }}>
+                                    {t('language', '语言')}
+                                </h3>
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '8px'
+                                }}>
+                                    {supportedLangs.map((lang) => {
+                                        const isActive = currentLang === lang;
+                                        return (
+                                            <button
+                                                key={lang}
+                                                onClick={() => {
+                                                    changeLanguage(lang);
+                                                    onClose();
+                                                }}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    width: '100%',
+                                                    padding: '8px 12px',
+                                                    borderRadius: '6px',
+                                                    backgroundColor: isActive
+                                                        ? (isDarkTheme ? 'rgba(217, 119, 6, 0.1)' : '#fff7ed')
+                                                        : 'transparent',
+                                                    color: isActive
+                                                        ? '#d97706'
+                                                        : (isDarkTheme ? '#e5e7eb' : '#4b5563'),
+                                                    border: 'none',
+                                                    textAlign: 'left',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <span>{supportedLangsMap[lang]}</span>
+                                                {isActive && (
+                                                    <svg style={{ width: '20px', height: '20px' }} viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
-                ) : (
-                    <Button
-                        variant="outline"
-                        color="gray"
-                        onClick={() => {
-                            showLoginModal();
-                            onClose();
-                        }}
-                        className="w-full mt-2"
-                    >
-                        {t('root.login_button', 'Login')}
-                    </Button>
-                )}
+                </div>
+
+                {/* 抽屉底部 */}
+                <div style={{
+                    padding: '16px',
+                    borderTop: isDarkTheme ? '1px solid #374151' : '1px solid #e5e7eb'
+                }}>
+                    {isLoggedIn ? (
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <img src={userInfo.avatar_url} alt="avatar" className="w-8 h-8 rounded-full" />
+                                <span className="text-sm font-medium">{userInfo.user_name || userInfo.user_email}</span>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    handleLogout();
+                                    onClose();
+                                }}
+                                style={{
+                                    width: '100%',
+                                    padding: '8px 16px',
+                                    borderRadius: '6px',
+                                    backgroundColor: isDarkTheme ? '#1f2937' : '#f3f4f6',
+                                    color: isDarkTheme ? '#e5e7eb' : '#4b5563',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                    textAlign: 'center'
+                                }}
+                            >
+                                {t('root.logout_button', 'Logout')}
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => {
+                                showLoginModal();
+                                onClose();
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: '8px 16px',
+                                borderRadius: '6px',
+                                backgroundColor: isDarkTheme ? '#d97706' : '#f59e0b',
+                                color: 'white',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                textAlign: 'center',
+                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            {t('root.login_button', 'Login')}
+                        </button>
+                    )}
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 
@@ -481,6 +657,7 @@ export function Header() {
                     currentLang={currentLang}
                     changeLanguage={changeLanguage}
                     handleLogout={handleLogout}
+                    userInfo={userInfo}
                 />
 
                 {/* 桌面端头部 */}
