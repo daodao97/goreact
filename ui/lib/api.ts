@@ -38,13 +38,6 @@ export const fetchApi = async <T extends unknown>(url: string, options: RequestO
 
         return await response.json() as T;
     } catch (error: any) {
-        console.error(`API请求失败: ${url}`, error);
-
-        // 使用全局Toast显示错误信息
-        if (showError && window.__showToast) {
-            window.__showToast('错误', error.message || '请求失败，请稍后重试', 'error');
-        }
-
         throw error;
     }
 };
