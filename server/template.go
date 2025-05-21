@@ -13,7 +13,6 @@ import (
 	"github.com/daodao97/xgo/xlog"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
-	"rogchap.com/v8go"
 )
 
 type TemplateOptions struct {
@@ -81,17 +80,8 @@ func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any
 		}
 	}
 
-	// 从池中获取 isolate
-	isolate := v8go.NewIsolate()
-	defer isolate.Dispose()
-
-	// 使用获取的 isolate 创建上下文
-	global := v8go.NewObjectTemplate(isolate)
-	ctx := v8go.NewContext(isolate, global)
-	defer ctx.Close()
-
 	render := &ReactRenderer{
-		ctx:     ctx,
+		engine:  NewV8JsEngine(),
 		content: string(reactContent),
 		name:    fragment,
 	}
@@ -109,6 +99,8 @@ func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any
 			}
 		}
 	}
+
+	render.Close()
 
 	return html, nil
 }

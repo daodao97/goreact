@@ -12,6 +12,7 @@ import (
 )
 
 // HTMLRender 是 HTML 渲染器的自定义实现
+// react js 生成的 html 通过 go template 渲染
 type HTMLRender struct {
 	Template      *template.Template
 	TemplateName  string
