@@ -50,13 +50,13 @@ func init() {
 func BuildCSS() {
 	cmd := exec.Command("npx", "@tailwindcss/cli", "-i", filepath.Join(frontendDir, "css/tailwind-input.css"), "-o", filepath.Join(tmpFrontendDir, "css/tailwind.css"), "--postcss")
 	cmd.Dir = "./"
-	xlog.Info("build css", xlog.String("cmd", cmd.String()))
+	xlog.Debug("build css", xlog.String("cmd", cmd.String()))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		xlog.Error("tailwindcss"+cmd.String(), xlog.String("err", err.Error()), xlog.String("output", string(output)))
+		xlog.Debug("build css", xlog.String("err", err.Error()), xlog.String("output", string(output)))
 		log.Fatal(err)
 	} else {
-		xlog.Info("tailwindcss"+cmd.String(), xlog.String("output", string(output)))
+		xlog.Debug("build css", xlog.String("output", string(output)))
 	}
 }
 
@@ -67,9 +67,10 @@ func BuildJS() {
 	if _, err := os.Stat(filepath.Join(tmpFrontendDir, "node_modules")); os.IsNotExist(err) {
 		cmd := exec.Command("npm", "install")
 		cmd.Dir = "./"
-		xlog.Info("install dependencies", xlog.String("cmd", cmd.String()))
+		xlog.Debug("install dependencies", xlog.String("cmd", cmd.String()))
 		_, err := cmd.CombinedOutput()
 		if err != nil {
+			xlog.Debug("install dependencies", xlog.String("err", err.Error()))
 			log.Fatal(err)
 		}
 	}
