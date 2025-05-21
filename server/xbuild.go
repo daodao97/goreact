@@ -62,7 +62,7 @@ func BuildJS() {
 	os.RemoveAll(tmpFrontendDir)
 	// check node_modules
 	if _, err := os.Stat(filepath.Join(tmpFrontendDir, "node_modules")); os.IsNotExist(err) {
-		cmd := exec.Command("bun", "install")
+		cmd := exec.Command("npm", "install")
 		cmd.Dir = "./"
 		log.Println("install node_modules")
 		_, err := cmd.CombinedOutput()
