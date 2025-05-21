@@ -48,22 +48,7 @@ func init() {
 }
 
 func BuildCSS() {
-	// 先检查 tailwindcss 是否安装
-	checkCmd := exec.Command("npx", "--no", "tailwindcss", "--help")
-	checkCmd.Dir = "./"
-	if err := checkCmd.Run(); err != nil {
-		xlog.Debug("安装 tailwindcss", xlog.String("err", err.Error()))
-		installCmd := exec.Command("npm", "install", "-D", "tailwindcss", "postcss", "autoprefixer")
-		installCmd.Dir = "./"
-		output, err := installCmd.CombinedOutput()
-		if err != nil {
-			xlog.Debug("安装 tailwindcss 失败", xlog.String("err", err.Error()), xlog.String("output", string(output)))
-			log.Fatal(err)
-		}
-	}
-
-	// 使用 tailwindcss 直接构建，避免使用 @parcel/watcher
-	cmd := exec.Command("npx", "tailwindcss", "-i", filepath.Join(frontendDir, "css/tailwind-input.css"), "-o", filepath.Join(tmpFrontendDir, "css/tailwind.css"), "--no-watch")
+	cmd := exec.Command("npx", "@tailwindcss/cli", "-i", filepath.Join(frontendDir, "css/tailwind-input.css"), "-o", filepath.Join(tmpFrontendDir, "css/tailwind.css"), "--postcss")
 	cmd.Dir = "./"
 	xlog.Debug("build css", xlog.String("cmd", cmd.String()))
 	output, err := cmd.CombinedOutput()
