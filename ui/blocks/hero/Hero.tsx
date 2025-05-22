@@ -25,6 +25,9 @@ export default function Hero({ hero, children }: { hero: Hero, children: React.R
     const [className, setClassName] = useState("text-4xl sm:text-5xl font-extrabold mb-6 tracking-tight text-white");
 
     useEffect(() => {
+        if (typeof window == 'undefined') {
+            return;
+        }
         const updateDimensions = () => {
             setWindowHeight(`${window.innerHeight}px`);
             setIsMobile(window.innerWidth < 640); // sm断点以下视为移动设备
