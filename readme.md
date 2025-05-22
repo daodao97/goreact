@@ -96,6 +96,11 @@ flowchart TD
 
 ## 快速开始
 
+### Demo Site
+
+[](https://whoismaking.money)
+[](https://4oimg.art)
+
 ### template
 
 ```bash
