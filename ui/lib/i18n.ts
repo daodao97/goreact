@@ -20,12 +20,22 @@ export function getWebsite() {
 
 
 export function getUrlWithLang(path: string) {
-    const lang = window.LANG;
-    const defaultLang = getWebsite()?.Lang;
-    if (lang === defaultLang) {
+    // 如果是完整的URL（以http://或https://开头），直接返回不修改
+    if (path.startsWith('http://') || path.startsWith('https://')) {
         return path;
     }
-    return `/${lang}${path}`;
+
+    const lang = window.LANG;
+    const defaultLang = getWebsite()?.Lang;
+
+    // 确保路径以/开头
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+    if (lang === defaultLang) {
+        return normalizedPath;
+    }
+
+    return `/${lang}${normalizedPath}`;
 }
 
 export function matchPath(path: string, currentPath: string): boolean {
