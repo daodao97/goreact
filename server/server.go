@@ -15,9 +15,9 @@ func Gin() *gin.Engine {
 
 	// 设置模板渲染器
 	var opts []func(*TemplateOptions)
-	if !xapp.IsDev() {
-		opts = append(opts, WithCache(NewTemplateCache()))
-	}
+	// if !xapp.IsDev() {
+	// 	opts = append(opts, WithCache(NewTemplateCache()))
+	// }
 	r.HTMLRender = CreateTemplateRenderer(opts...)
 
 	r.Use(SetRendererContextMiddleware(r.HTMLRender.(*TemplateRenderer)))
