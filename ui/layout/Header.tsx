@@ -270,23 +270,29 @@ const MobileMenu = ({
 
     // 创建抽屉的容器元素，确保其附加到body上，避免受到父元素样式影响
     useEffect(() => {
-        // 创建抽屉容器
-        if (isOpen && typeof document !== 'undefined') {
+        // 仅在客户端执行
+        if (isOpen) {
             // 防止滚动
             document.body.style.overflow = 'hidden';
+        } else {
+            // 恢复滚动
+            document.body.style.overflow = '';
         }
 
         return () => {
             // 清理
-            if (typeof document !== 'undefined') {
-                document.body.style.overflow = '';
-            }
+            document.body.style.overflow = '';
         };
     }, [isOpen]);
 
+    // 如果没有打开，不渲染菜单内容，避免水合不匹配
+    if (!isOpen && typeof window !== 'undefined') {
+        return null;
+    }
+
     return (
         <>
-            {/* 遮罩层 */}
+            {/* 遮罩层，仅在isOpen=true时显示 */}
             {isOpen && (
                 <div
                     className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999]"
@@ -294,7 +300,7 @@ const MobileMenu = ({
                 />
             )}
 
-            {/* 侧边抽屉 */}
+            {/* 侧边抽屉，使用CSS控制可见性 */}
             <div className={`fixed top-0 right-0 bottom-0 w-[280px] h-screen ${isDarkTheme ? 'bg-gray-900' : 'bg-white'} 
                 ${isOpen ? 'translate-x-0' : 'translate-x-full'} transition-transform duration-300 ease-in-out z-[10000] 
                 shadow-[-4px_0_10px_rgba(0,0,0,0.1)] flex flex-col`}>
