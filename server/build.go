@@ -2,169 +2,236 @@ package server
 
 import (
 	"fmt"
+	"io/fs"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/daodao97/goreact/util"
 	"github.com/daodao97/xgo/xlog"
-	esbuild "github.com/evanw/esbuild/pkg/api"
 )
 
-/*
+// 客户端入口模板
+const clientTemplateFormat = `import { %s } from "@/pages/%s";
+import { renderPage } from "#/lib/PageWrapper";
 
-使用 esbuild 打包 前端代码文件
+renderPage({Component: %s});
+`
 
-*/
+// 服务端入口模板
+const serverTemplateFormat = `import { %s } from "@/pages/%s";
+import { createServerRenderer } from "#/lib/ServerRender";
 
-const textEncoderPolyfill = `function TextEncoder(){} TextEncoder.prototype.encode=function(string){var octets=[],length=string.length,i=0;while(i<length){var codePoint=string.codePointAt(i),c=0,bits=0;codePoint<=0x7F?(c=0,bits=0x00):codePoint<=0x7FF?(c=6,bits=0xC0):codePoint<=0xFFFF?(c=12,bits=0xE0):codePoint<=0x1FFFFF&&(c=18,bits=0xF0),octets.push(bits|(codePoint>>c)),c-=6;while(c>=0){octets.push(0x80|((codePoint>>c)&0x3F)),c-=6}i+=codePoint>=0x10000?2:1}return octets};function TextDecoder(){} TextDecoder.prototype.decode=function(octets){var string="",i=0;while(i<octets.length){var octet=octets[i],bytesNeeded=0,codePoint=0;octet<=0x7F?(bytesNeeded=0,codePoint=octet&0xFF):octet<=0xDF?(bytesNeeded=1,codePoint=octet&0x1F):octet<=0xEF?(bytesNeeded=2,codePoint=octet&0x0F):octet<=0xF4&&(bytesNeeded=3,codePoint=octet&0x07),octets.length-i-bytesNeeded>0?function(){for(var k=0;k<bytesNeeded;){octet=octets[i+k+1],codePoint=(codePoint<<6)|(octet&0x3F),k+=1}}():codePoint=0xFFFD,bytesNeeded=octets.length-i,string+=String.fromCodePoint(codePoint),i+=bytesNeeded+1}return string};`
+globalThis.Render = createServerRenderer({ Component: %s });
+`
 
-const messageChannelPolyfill = `if(typeof MessageChannel==="undefined"){var MessageChannel=function(){this.port1={postMessage:function(msg){setTimeout(()=>{this.onmessage&&this.onmessage({data:msg})},0)},onmessage:null},this.port2={postMessage:function(msg){setTimeout(()=>{this.onmessage&&this.onmessage({data:msg})},0)},onmessage:null}}}`
+var frontendDir = "./frontend"
+var tmpFrontendDir string
+var clientEntry string
+var serverEntry string
+var pagesDir string
+var pwd string
+var buildDir = "./build"
+var buildServerDir = "./build/server"
 
-const processPolyfill = `var process = {env: {NODE_ENV: "production"}};`
+func init() {
+	pwd, _ = os.Getwd()
+	frontendDir = filepath.Join(pwd, "frontend")
 
-func aliasPlugin(aliases map[string]string) esbuild.Plugin {
-	return esbuild.Plugin{
-		Name: "alias-resolver",
-		Setup: func(build esbuild.PluginBuild) {
-			for alias, path := range aliases {
-				build.OnResolve(esbuild.OnResolveOptions{Filter: "^" + alias + "/"}, func(args esbuild.OnResolveArgs) (esbuild.OnResolveResult, error) {
-					// 将 @/ 替换为实际路径
-					newPath := strings.TrimPrefix(args.Path, alias+"/")
-					basePath := path + "/" + newPath
+	projectName := filepath.Base(pwd)
 
-					// 尝试不同的扩展名
-					extensions := []string{"", ".tsx", ".ts", ".jsx", ".js"}
-					for _, ext := range extensions {
-						fullPath := basePath + ext
-						if _, err := os.Stat(fullPath); err == nil {
-							return esbuild.OnResolveResult{Path: fullPath, External: false}, nil
-						}
-					}
+	tmpFrontendDir = filepath.Join(os.TempDir(), projectName+"-frontend")
+	clientEntry = filepath.Join(tmpFrontendDir, "app")
+	serverEntry = filepath.Join(tmpFrontendDir, "server")
+	pagesDir = filepath.Join(tmpFrontendDir, "pages")
+}
 
-					// 如果找不到文件，尝试作为目录查找 index 文件
-					for _, ext := range extensions[1:] { // 跳过空扩展名
-						fullPath := basePath + "/index" + ext
-						if _, err := os.Stat(fullPath); err == nil {
-							return esbuild.OnResolveResult{Path: fullPath, External: false}, nil
-						}
-					}
-
-					fmt.Printf("路径解析失败: %s -> %s\n", args.Path, basePath)
-					// 返回原始路径，让 esbuild 继续尝试解析
-					return esbuild.OnResolveResult{Path: basePath, External: false}, nil
-				})
-			}
-		},
+func BuildCSS() {
+	xlog.Debug("build css start")
+	cmd := exec.Command("npx", "@tailwindcss/cli", "-i", filepath.Join(frontendDir, "css/tailwind-input.css"), "-o", filepath.Join(tmpFrontendDir, "css/tailwind.css"), "--postcss")
+	cmd.Dir = "./"
+	xlog.Debug("build css", xlog.String("cmd", cmd.String()))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		xlog.Debug("build css", xlog.String("err", err.Error()), xlog.String("output", string(output)))
+		log.Fatal(err)
+	} else {
+		xlog.Debug("build css", xlog.String("output", string(output)))
 	}
 }
 
-func BuildClientComponents(jsFolder, jsOutput string, aliases map[string]string) error {
-	xlog.Debug("Building client Javascript")
+func BuildJS() {
+	xlog.Debug("build js start")
+	os.RemoveAll(buildDir)
+	xlog.Debug("remove build dir", xlog.String("dir", buildDir))
 
-	filesJSX, err := util.GetFiles(jsFolder, ".jsx")
-	if err != nil {
-		return err
+	xlog.Debug("check node_modules", xlog.String("dir", filepath.Join(tmpFrontendDir, "node_modules")))
+	if _, err := os.Stat(filepath.Join(tmpFrontendDir, "node_modules")); os.IsNotExist(err) {
+		cmd := exec.Command("npm", "install")
+		cmd.Dir = "./"
+		xlog.Debug("install dependencies", xlog.String("cmd", cmd.String()))
+		_, err := cmd.CombinedOutput()
+		if err != nil {
+			xlog.Debug("install dependencies", xlog.String("err", err.Error()))
+			log.Fatal(err)
+		}
 	}
 
-	filesTSX, err := util.GetFiles(jsFolder, ".tsx")
+	os.RemoveAll(tmpFrontendDir)
+	xlog.Debug("remove tmpFrontendDir dir", xlog.String("dir", tmpFrontendDir))
+	xlog.Debug("copy frontend dir", xlog.String("dir", tmpFrontendDir), xlog.String("to", frontendDir))
+	os.CopyFS(tmpFrontendDir, os.DirFS(frontendDir))
+
+	BuildCSS()
+
+	err := ensureDirectories(clientEntry, serverEntry)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
-	allFiles := append(filesJSX, filesTSX...)
-	allFiles = append(allFiles, tmpFrontendDir+"/app.js")
+	xlog.Debug("generate entry files")
+	// 生成入口文件
+	err = generateEntryFiles()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	pwd, _ := os.Getwd()
+	currentDir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	builds := esbuild.Build(esbuild.BuildOptions{
-		EntryPoints:    allFiles,
-		Bundle:         true,
-		Write:          true,
-		Splitting:      true,
-		AllowOverwrite: true,
-		AssetNames:     "[name]-[hash]",
-		Outdir:         jsOutput,
-		Format:         esbuild.FormatESModule,
-		Platform:       esbuild.PlatformBrowser,
-		Target:         esbuild.ESNext,
-		Loader: map[string]esbuild.Loader{
-			".jsx":  esbuild.LoaderJSX,
-			".tsx":  esbuild.LoaderTSX,
-			".scss": esbuild.LoaderLocalCSS,
-		},
-		Plugins:       []esbuild.Plugin{aliasPlugin(aliases)},
-		NodePaths:     []string{filepath.Join(pwd, "node_modules")},
-		AbsWorkingDir: pwd,
+	err = BuildClientComponents(clientEntry, buildDir, map[string]string{
+		"@": filepath.Join(currentDir, "frontend"),
+		"#": filepath.Join(currentDir, "node_modules", "goreact", "ui"),
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	if len(builds.Errors) > 0 {
-		return fmt.Errorf("error on esbuild: %v", builds.Errors)
+	_, err = BuildServerComponents(serverEntry, buildServerDir, map[string]string{
+		"@": filepath.Join(currentDir, "frontend"),
+		"#": filepath.Join(currentDir, "node_modules", "goreact", "ui"),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// copy frontend/public to build/public
+	err = copyDir(filepath.Join(currentDir, "frontend/public"), buildDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func copyDir(src string, dest string) error {
+	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 获取相对路径
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+
+		// 组合目标路径
+		destPath := filepath.Join(dest, relPath)
+
+		if d.IsDir() {
+			// 创建目标目录
+			return os.MkdirAll(destPath, 0755)
+		} else {
+			// 确保目标目录存在
+			destDir := filepath.Dir(destPath)
+			if err := os.MkdirAll(destDir, 0755); err != nil {
+				return err
+			}
+
+			// 复制文件
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+
+			return os.WriteFile(destPath, data, 0644)
+		}
+	})
+}
+
+// 确保目录存在
+func ensureDirectories(dirs ...string) error {
+	for _, dir := range dirs {
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			err := os.MkdirAll(dir, 0755)
+			if err != nil {
+				return fmt.Errorf("创建目录 %s 失败: %w", dir, err)
+			}
+		}
+	}
+	return nil
+}
+
+// 生成入口文件
+func generateEntryFiles() error {
+	// 扫描组件目录
+	componentFiles, err := getComponentFiles(pagesDir)
+	if err != nil {
+		return err
+	}
+
+	// 为每个组件生成入口文件
+	for _, file := range componentFiles {
+		baseName := filepath.Base(file)
+		componentName := strings.TrimSuffix(baseName, filepath.Ext(baseName))
+
+		// 生成客户端入口
+		clientContent := fmt.Sprintf(clientTemplateFormat, componentName, componentName, componentName)
+		clientPath := filepath.Join(clientEntry, baseName)
+		err := os.WriteFile(clientPath, []byte(clientContent), 0644)
+		if err != nil {
+			return fmt.Errorf("写入客户端入口 %s 失败: %w", clientPath, err)
+		}
+
+		// 生成服务端入口
+		serverContent := fmt.Sprintf(serverTemplateFormat, componentName, componentName, componentName)
+		serverPath := filepath.Join(serverEntry, baseName)
+		err = os.WriteFile(serverPath, []byte(serverContent), 0644)
+		if err != nil {
+			return fmt.Errorf("写入服务端入口 %s 失败: %w", serverPath, err)
+		}
 	}
 
 	return nil
 }
 
-func BuildServerComponents(jsFolder, jsOutput string, aliases map[string]string) (map[string]string, error) {
-	xlog.Debug("Building server Javascript")
-	result := map[string]string{}
+// 获取组件文件列表
+func getComponentFiles(componentsDir string) ([]string, error) {
+	var files []string
 
-	filesJSX, err := util.GetFiles(jsFolder, ".jsx")
-	if err != nil {
-		return result, err
-	}
+	err := filepath.WalkDir(componentsDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 
-	filesTSX, err := util.GetFiles(jsFolder, ".tsx")
-	if err != nil {
-		return result, err
-	}
+		// 只处理 .jsx 和 .tsx 文件
+		if !d.IsDir() && (strings.HasSuffix(path, ".jsx") || strings.HasSuffix(path, ".tsx")) {
+			// 只保留文件名，不包含路径
+			relPath, err := filepath.Rel(componentsDir, path)
+			if err != nil {
+				return err
+			}
+			files = append(files, relPath)
+		}
 
-	// filesJS, err := GetFiles(jsFolder, ".js")
-	// if err != nil {
-	// 	return result, err
-	// }
-
-	allFiles := append(filesJSX, filesTSX...)
-
-	pwd, _ := os.Getwd()
-
-	builds := esbuild.Build(esbuild.BuildOptions{
-		EntryPoints: allFiles,
-		Bundle:      true,
-		Write:       true,
-		Outdir:      jsOutput,
-		Format:      esbuild.FormatESModule,
-		Platform:    esbuild.PlatformBrowser,
-		Target:      esbuild.ESNext,
-		Banner: map[string]string{
-			"js": processPolyfill + messageChannelPolyfill + textEncoderPolyfill,
-		},
-		Loader: map[string]esbuild.Loader{
-			".jsx":  esbuild.LoaderJSX,
-			".tsx":  esbuild.LoaderTSX,
-			".scss": esbuild.LoaderLocalCSS,
-		},
-		Plugins:       []esbuild.Plugin{aliasPlugin(aliases)},
-		NodePaths:     []string{filepath.Join(pwd, "node_modules")},
-		AbsWorkingDir: pwd,
+		return nil
 	})
 
-	if len(builds.Errors) > 0 {
-		return result, fmt.Errorf("error on esbuild: %v", builds.Errors)
+	if err != nil {
+		return nil, fmt.Errorf("扫描组件目录失败: %w", err)
 	}
 
-	for _, file := range builds.OutputFiles {
-		if strings.Contains(file.Path, jsOutput) {
-			paths := strings.Split(file.Path, jsOutput)
-			path := ""
-			if len(paths) >= 2 {
-				path = strings.Join(paths[1:], "")
-			}
-			result[path] = string(file.Contents)
-			fmt.Println("Server file built in:", path)
-
-		}
-	}
-
-	return result, nil
+	return files, nil
 }

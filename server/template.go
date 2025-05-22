@@ -47,6 +47,7 @@ func CreateTemplateRenderer(opts ...func(*TemplateOptions)) render.HTMLRender {
 	}
 }
 
+// TemplateRenderer 模板引擎
 type TemplateRenderer struct {
 	templates  *template.Template
 	ginContext *gin.Context
@@ -55,9 +56,6 @@ type TemplateRenderer struct {
 
 func (t *TemplateRenderer) SetGinContext(c *gin.Context) {
 	t.ginContext = c
-}
-
-func (t *TemplateRenderer) Close() {
 }
 
 func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any) (template.HTML, error) {
@@ -85,6 +83,7 @@ func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any
 		content: string(reactContent),
 		name:    fragment,
 	}
+	defer render.Close()
 
 	// 执行渲染
 	html, err := render.Ctx(c).Render(data)
@@ -100,8 +99,6 @@ func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any
 		}
 	}
 
-	render.Close()
-
 	return html, nil
 }
 
@@ -110,7 +107,9 @@ func (t *TemplateRenderer) Instance(name string, data any) render.Render {
 	parts := strings.Split(name, ":")
 	templateName := parts[0]
 	componentName := ""
-
+	if len(parts) > 1 {
+		componentName = parts[1]
+	}
 	if len(parts) > 1 {
 		componentName = parts[1]
 	}

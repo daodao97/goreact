@@ -62,9 +62,6 @@ func (r *HTMLRender) Render(w http.ResponseWriter) error {
 	// 先执行模板渲染，然后再释放资源
 	err = r.Template.ExecuteTemplate(w, r.TemplateName, data)
 
-	// 确保资源释放
-	r.renderer.Close()
-
 	return err
 }
 
