@@ -2,6 +2,14 @@
 
 GoReact 是一个结合 Go 后端和 React 前端的服务端渲染(SSR)框架，旨在提供高性能、易维护的全栈开发体验。
 
+## Demo Site
+
+[whoismaking.money](https://whoismaking.money)
+
+[4oimg.art](https://4oimg.art)
+
+[goreact-template-demo](https://gossr.daodao.run)
+
 ## 项目特性
 
 - **服务端渲染(SSR)**: 使用 Go 在服务端渲染 React 组件，提升首屏加载速度和 SEO 友好性
@@ -95,14 +103,6 @@ flowchart TD
 6. React 在客户端"激活"(hydrate)页面，接管交互性
 
 ## 快速开始
-
-### Demo Site
-
-[whoismaking.money](https://whoismaking.money)
-
-[4oimg.art](https://4oimg.art)
-
-[goreact-template-demo](https://gossr.daodao.run)
 
 ### template
 
