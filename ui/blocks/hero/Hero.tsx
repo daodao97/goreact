@@ -22,6 +22,7 @@ type Hero = {
 export default function Hero({ hero, children }: { hero: Hero, children: React.ReactNode }) {
     const [windowHeight, setWindowHeight] = useState<string>("100vh");
     const [isMobile, setIsMobile] = useState<boolean>(false);
+    const [className, setClassName] = useState("text-4xl sm:text-5xl font-extrabold mb-6 tracking-tight text-white");
 
     useEffect(() => {
         const updateDimensions = () => {
@@ -31,6 +32,7 @@ export default function Hero({ hero, children }: { hero: Hero, children: React.R
 
         updateDimensions();
         window.addEventListener('resize', updateDimensions);
+        setClassName("text-2xl sm:text-4xl md:text-5xl font-extrabold mb-6 tracking-tight text-white");
         return () => window.removeEventListener('resize', updateDimensions);
     }, []);
 
@@ -80,7 +82,7 @@ export default function Hero({ hero, children }: { hero: Hero, children: React.R
             )}
 
             <div className="max-w-4xl mx-auto text-center relative z-10">
-                <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold mb-6 tracking-tight text-white">
+                <h1 className={className}>
                     {hero.title}
                 </h1>
                 {hero.buttons && (
