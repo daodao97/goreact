@@ -14,14 +14,14 @@ import (
 
 // 客户端入口模板
 const clientTemplateFormat = `import { %s } from "@/pages/%s";
-import { renderPage } from "#/lib/PageWrapper";
+import { renderPage } from "@/core/lib/PageWrapper";
 
 renderPage({Component: %s});
 `
 
 // 服务端入口模板
 const serverTemplateFormat = `import { %s } from "@/pages/%s";
-import { createServerRenderer } from "#/lib/ServerRender";
+import { createServerRenderer } from "@/core/lib/ServerRender";
 
 globalThis.Render = createServerRenderer({ Component: %s });
 `
