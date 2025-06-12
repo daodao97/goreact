@@ -1,10 +1,10 @@
 package server
 
 import (
-	"fmt"
 	"html/template"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -59,7 +59,7 @@ func (t *TemplateRenderer) SetGinContext(c *gin.Context) {
 }
 
 func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any) (template.HTML, error) {
-	reactContent, err := os.ReadFile(fmt.Sprintf("./build/server/%s", fragment))
+	reactContent, err := os.ReadFile(filepath.Join(buildServerDir, fragment))
 	if err != nil {
 		return template.HTML(""), err
 	}
@@ -104,14 +104,18 @@ func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any
 
 // Instance 实现 gin.HTMLRender 接口的方法
 func (t *TemplateRenderer) Instance(name string, data any) render.Render {
-	parts := strings.Split(name, ":")
-	templateName := parts[0]
 	componentName := ""
-	if len(parts) > 1 {
-		componentName = parts[1]
-	}
-	if len(parts) > 1 {
-		componentName = parts[1]
+	templateName := ""
+
+	if strings.Contains(name, ":") {
+		parts := strings.Split(name, ":")
+		templateName = parts[0]
+		if len(parts) > 1 {
+			componentName = parts[1]
+		}
+	} else {
+		templateName = "index.html"
+		componentName = name
 	}
 
 	return &HTMLRender{
