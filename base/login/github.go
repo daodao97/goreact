@@ -24,7 +24,8 @@ func GithubCallbackHandler(c *gin.Context) {
 			"client_id":     authProvider.ClientID,
 			"client_secret": authProvider.ClientSecret,
 			"code":          code,
-		}).Post("https://github.com/login/oauth/access_token")
+		}).
+		Post("https://github.com/login/oauth/access_token")
 
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"error": "failed to get access token"})
@@ -73,10 +74,13 @@ func GithubCallbackHandler(c *gin.Context) {
 		"channel":    "github",
 	}
 
-	if err := handleUserLogin(c, userLoginInfo, conf.Get().JwtSecret); err != nil {
+	token, err := handleUserLogin(c, userLoginInfo, conf.Get().JwtSecret)
+	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"error": "failed to handle user login"})
 		return
 	}
 
-	c.Redirect(http.StatusTemporaryRedirect, "/")
+	userLoginInfo["token"] = token
+
+	c.JSON(http.StatusOK, userLoginInfo)
 }

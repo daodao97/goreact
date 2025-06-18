@@ -90,10 +90,13 @@ func MailCallbackHandler(c *gin.Context) {
 		"avatar_url": user.GetString("avatar_url"),
 	}
 
-	if err := handleUserLogin(c, payload, conf.Get().JwtSecret); err != nil {
+	token, err := handleUserLogin(c, payload, conf.Get().JwtSecret)
+	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to handle user login"})
 		return
 	}
+
+	payload["token"] = token
 
 	c.JSON(200, payload)
 }

@@ -142,10 +142,13 @@ func GoogleCallbackHandler(c *gin.Context) {
 			"channel":    "google",
 		}
 
-		if err := handleUserLogin(c, userInfo, conf.Get().JwtSecret); err != nil {
+		token, err := handleUserLogin(c, userInfo, conf.Get().JwtSecret)
+		if err != nil {
 			c.JSON(500, gin.H{"error": "Failed to handle user login"})
 			return
 		}
+
+		userInfo["token"] = token
 
 		c.JSON(200, userInfo)
 		return

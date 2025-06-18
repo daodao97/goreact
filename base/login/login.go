@@ -7,8 +7,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var _provider []conf.AuthProvider
+
+func SetProvider(provider []conf.AuthProvider) {
+	_provider = provider
+}
+
 func GetProvider(providerName string) *conf.AuthProvider {
-	for _, provider := range conf.Get().Website.AuthProvider {
+	for _, provider := range _provider {
 		if provider.Provider == conf.AuthProviderType(providerName) {
 			return &provider
 		}
@@ -16,7 +22,7 @@ func GetProvider(providerName string) *conf.AuthProvider {
 	return nil
 }
 
-func handleUserLogin(c *gin.Context, userInfo map[string]string, jwtSecret string) error {
+func handleUserLogin(c *gin.Context, userInfo map[string]string, jwtSecret string) (string, error) {
 	userId, err := CreateUserOrIgnore(xdb.Record{
 		"email":      userInfo["email"],
 		"user_name":  userInfo["user_name"],
@@ -25,7 +31,7 @@ func handleUserLogin(c *gin.Context, userInfo map[string]string, jwtSecret strin
 	})
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	payload := map[string]any{
@@ -37,11 +43,11 @@ func handleUserLogin(c *gin.Context, userInfo map[string]string, jwtSecret strin
 
 	token, err := xjwt.GenHMacToken(payload, jwtSecret)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	c.SetCookie("session_token", token, 3600*24*30, "/", "", false, true)
-	return nil
+	return token, nil
 }
 
 var UserModel xdb.Model
