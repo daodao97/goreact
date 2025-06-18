@@ -7,14 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var _provider []conf.AuthProvider
-
-func SetProvider(provider []conf.AuthProvider) {
-	_provider = provider
-}
-
 func GetProvider(providerName string) *conf.AuthProvider {
-	for _, provider := range _provider {
+	for _, provider := range conf.Get().Website.AuthProvider {
 		if provider.Provider == conf.AuthProviderType(providerName) {
 			return &provider
 		}
