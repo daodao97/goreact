@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/daodao97/goreact/conf"
 	"github.com/daodao97/goreact/dao"
@@ -18,13 +19,22 @@ type authContextKey struct{}
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 尝试从 cookie 获取 token
+		var token string
 		cookieToken, _ := c.Cookie("session_token")
+		authHeader := c.GetHeader("Authorization")
+
+		if cookieToken != "" {
+			token = cookieToken
+		}
+		if authHeader != "" {
+			token = strings.TrimPrefix(authHeader, "Bearer ")
+		}
 
 		// 尝试从 header 获取 API token
-		headerToken := c.GetHeader("X-API-KEY")
+		apiKey := c.GetHeader("X-API-KEY")
 
 		// 如果 cookie 和 header 都没有 token，返回未授权错误
-		if cookieToken == "" && headerToken == "" {
+		if token == "" && apiKey == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Need Login"})
 			c.Abort()
 			return
@@ -34,8 +44,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		var verifyErr error
 
 		// 尝试验证 cookie token
-		if cookieToken != "" {
-			payload, verifyErr = xjwt.VerifyHMacToken(cookieToken, conf.Get().JwtSecret)
+		if token != "" {
+			payload, verifyErr = xjwt.VerifyHMacToken(token, conf.Get().JwtSecret)
 			if verifyErr != nil {
 				xlog.ErrorCtx(c, "auth", xlog.Any("verifyErr", verifyErr))
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid session token"})
@@ -45,8 +55,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		// 如果 cookie token 验证失败，尝试验证 API token
-		if headerToken != "" {
-			apiToken, apiErr := dao.GetApiTokenByToken(headerToken)
+		if apiKey != "" {
+			apiToken, apiErr := dao.GetApiTokenByToken(apiKey)
 			if apiErr != nil {
 				xlog.ErrorCtx(c, "auth", xlog.Any("apiErr", apiErr))
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid API Key"})
