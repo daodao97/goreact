@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/daodao97/goreact/conf"
 	"github.com/daodao97/xgo/xapp"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -66,6 +67,12 @@ func Gin() *gin.Engine {
 
 	if xapp.IsDev() {
 		setupDev(r)
+	}
+
+	if conf.Get().GoogleAdsTxt != "" {
+		r.GET("/ads.txt", func(c *gin.Context) {
+			c.String(http.StatusOK, conf.Get().GoogleAdsTxt)
+		})
 	}
 
 	return r
