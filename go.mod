@@ -3,7 +3,7 @@ module github.com/daodao97/goreact
 go 1.24.0
 
 require (
-	github.com/daodao97/xgo v0.0.0-20250416024806-6ca66c31dfd6
+	github.com/daodao97/xgo v0.0.0-20250726063400-60fdeb4c02d0
 	github.com/evanw/esbuild v0.25.4
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gin-contrib/cors v1.7.5
@@ -17,6 +17,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.13.2 // indirect
