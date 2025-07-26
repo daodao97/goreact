@@ -3,7 +3,7 @@ module github.com/daodao97/goreact
 go 1.24.0
 
 require (
-	github.com/daodao97/xgo v0.0.0-20250726063400-60fdeb4c02d0
+	github.com/daodao97/xgo v0.0.0-20250726084738-fb1b0480d2d1
 	github.com/evanw/esbuild v0.25.4
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gin-contrib/cors v1.7.5
