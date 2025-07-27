@@ -1,13 +1,17 @@
 package server
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io/fs"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/daodao97/xgo/xlog"
 )
@@ -47,27 +51,27 @@ func init() {
 	pagesDir = filepath.Join(tmpFrontendDir, "pages")
 }
 
-func BuildCSS() {
-	xlog.Debug("build css start")
-	cmd := exec.Command("npx", "@tailwindcss/cli", "-i", filepath.Join(frontendDir, "css/tailwind-input.css"), "-o", filepath.Join(tmpFrontendDir, "css/tailwind.css"), "--postcss")
-	cmd.Dir = "./"
-	xlog.Debug("build css", xlog.String("cmd", cmd.String()))
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		xlog.Debug("build css", xlog.String("err", err.Error()), xlog.String("output", string(output)))
-		log.Fatal(err)
-	} else {
-		xlog.Debug("build css", xlog.String("output", string(output)))
-	}
-}
-
 func BuildJS() {
+	frontendDirChanged, err := isDirChanged(frontendDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	isPackageChanged, err := isFileChanged("package.json", "package-lock.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if !frontendDirChanged && !isPackageChanged {
+		xlog.Debug("frontend dir is not changed and package is not changed, skip build")
+		return
+	}
+
 	xlog.Debug("build js start")
 	os.RemoveAll(buildDir)
 	xlog.Debug("remove build dir", xlog.String("dir", buildDir))
 
-	xlog.Debug("check node_modules", xlog.String("dir", filepath.Join(tmpFrontendDir, "node_modules")))
-	if _, err := os.Stat(filepath.Join(tmpFrontendDir, "node_modules")); os.IsNotExist(err) {
+	if isPackageChanged {
 		cmd := exec.Command("npm", "install")
 		cmd.Dir = "./"
 		xlog.Debug("install dependencies", xlog.String("cmd", cmd.String()))
@@ -85,12 +89,31 @@ func BuildJS() {
 
 	BuildCSS()
 
+	buildJS()
+}
+
+func BuildCSS() {
+	xlog.Debug("build css start")
+	cmd := exec.Command("npx", "@tailwindcss/cli", "-i", filepath.Join(frontendDir, "css/tailwind-input.css"), "-o", filepath.Join(tmpFrontendDir, "css/tailwind.css"), "--postcss")
+	cmd.Dir = "./"
+	xlog.Debug("build css", xlog.String("cmd", cmd.String()))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		xlog.Debug("build css", xlog.String("err", err.Error()), xlog.String("output", string(output)))
+		log.Fatal(err)
+	} else {
+		xlog.Debug("build css", xlog.String("output", string(output)))
+	}
+}
+
+func buildJS() {
+	// 确保目录存在
 	err := ensureDirectories(clientEntry, serverEntry)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	xlog.Debug("generate entry files")
+	xlog.Debug("BuildJS: generate entry files")
 	// 生成入口文件
 	err = generateEntryFiles()
 	if err != nil {
@@ -102,6 +125,7 @@ func BuildJS() {
 		log.Fatal(err)
 	}
 
+	xlog.Debug("BuildJS: build client components")
 	err = BuildClientComponents(clientEntry, buildDir, map[string]string{
 		"@": filepath.Join(currentDir, "frontend"),
 		"#": filepath.Join(currentDir, "node_modules", "goreact", "ui"),
@@ -110,6 +134,7 @@ func BuildJS() {
 		log.Fatal(err)
 	}
 
+	xlog.Debug("BuildJS: build server components")
 	_, err = BuildServerComponents(serverEntry, buildServerDir, map[string]string{
 		"@": filepath.Join(currentDir, "frontend"),
 		"#": filepath.Join(currentDir, "node_modules", "goreact", "ui"),
@@ -119,10 +144,13 @@ func BuildJS() {
 	}
 
 	// copy frontend/public to build/public
+	xlog.Debug("BuildJS: copy frontend/public to build/public")
 	err = copyDir(filepath.Join(currentDir, "frontend/public"), buildDir)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	xlog.Debug("BuildJS: build done")
 }
 
 func copyDir(src string, dest string) error {
@@ -234,4 +262,211 @@ func getComponentFiles(componentsDir string) ([]string, error) {
 	}
 
 	return files, nil
+}
+
+func isDirChanged(dir1 string) (bool, error) {
+	// 计算目录的hash值
+	currentHash, err := calculateDirHash(dir1)
+	if err != nil {
+		return false, fmt.Errorf("计算目录hash失败: %w", err)
+	}
+
+	// 获取缓存文件路径
+	cacheFile := getCacheFilePath(dir1)
+
+	// 读取之前缓存的hash
+	cachedHash, err := readCachedHash(cacheFile)
+	if err != nil {
+		// 第一次运行或缓存文件不存在，认为有变更
+		xlog.Debug("无法读取缓存hash，认为目录有变更", xlog.String("error", err.Error()))
+		err = writeCachedHash(cacheFile, currentHash)
+		if err != nil {
+			xlog.Debug("写入缓存hash失败", xlog.String("error", err.Error()))
+		}
+		return true, nil
+	}
+
+	// 对比hash值
+	hasChanged := currentHash != cachedHash
+	if hasChanged {
+		// 有变更，更新缓存
+		err = writeCachedHash(cacheFile, currentHash)
+		if err != nil {
+			xlog.Debug("更新缓存hash失败", xlog.String("error", err.Error()))
+		}
+		xlog.Debug("目录有变更", xlog.String("dir", dir1), xlog.String("oldHash", cachedHash[:8]), xlog.String("newHash", currentHash[:8]))
+	} else {
+		xlog.Debug("目录无变更", xlog.String("dir", dir1), xlog.String("hash", currentHash[:8]))
+	}
+
+	return hasChanged, nil
+}
+
+// 计算目录的hash值
+func calculateDirHash(dir string) (string, error) {
+	hasher := sha256.New()
+
+	var files []string
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 跳过某些不需要检查的目录和文件
+		if d.IsDir() {
+			name := d.Name()
+			if slices.Contains([]string{"node_modules", ".git", "dist", "build"}, name) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// 只检查特定类型的文件
+		ext := filepath.Ext(path)
+		if slices.Contains([]string{".tsx", ".ts", ".jsx", ".js", ".css", ".scss", ".json", ".html"}, ext) {
+			files = append(files, path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	// 排序确保hash的一致性
+	sort.Strings(files)
+
+	for _, file := range files {
+		// 获取文件信息
+		info, err := os.Stat(file)
+		if err != nil {
+			continue
+		}
+
+		// 将文件路径、大小、修改时间写入hasher
+		relPath, _ := filepath.Rel(dir, file)
+		hasher.Write([]byte(relPath))
+		hasher.Write([]byte(fmt.Sprintf("%d", info.Size())))
+		hasher.Write([]byte(info.ModTime().Format(time.RFC3339Nano)))
+
+		// 对于小文件，直接读取内容计算hash
+		if info.Size() < 1024*1024 { // 小于1MB的文件
+			content, err := os.ReadFile(file)
+			if err == nil {
+				hasher.Write(content)
+			}
+		}
+	}
+
+	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
+}
+
+// 获取缓存文件路径
+func getCacheFilePath(dir string) string {
+	// 使用目录路径生成唯一的缓存文件名
+	dirHash := sha256.Sum256([]byte(dir))
+	fileName := fmt.Sprintf("goreact-dir-cache-%x.txt", dirHash[:8])
+	return filepath.Join(os.TempDir(), fileName)
+}
+
+// 读取缓存的hash
+func readCachedHash(cacheFile string) (string, error) {
+	content, err := os.ReadFile(cacheFile)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(content)), nil
+}
+
+// 写入缓存的hash
+func writeCachedHash(cacheFile string, hash string) error {
+	return os.WriteFile(cacheFile, []byte(hash), 0644)
+}
+
+func isFileChanged(filePath ...string) (bool, error) {
+	if len(filePath) == 0 {
+		return false, nil
+	}
+
+	// 计算所有文件的联合hash值
+	currentHash, err := calculateFilesHash(filePath...)
+	if err != nil {
+		return false, fmt.Errorf("计算文件hash失败: %w", err)
+	}
+
+	// 获取缓存文件路径
+	cacheFile := getFilesCacheFilePath(filePath...)
+
+	// 读取之前缓存的hash
+	cachedHash, err := readCachedHash(cacheFile)
+	if err != nil {
+		// 第一次运行或缓存文件不存在，认为有变更
+		xlog.Debug("无法读取缓存hash，认为文件有变更", xlog.String("error", err.Error()))
+		err = writeCachedHash(cacheFile, currentHash)
+		if err != nil {
+			xlog.Debug("写入缓存hash失败", xlog.String("error", err.Error()))
+		}
+		return true, nil
+	}
+
+	// 对比hash值
+	hasChanged := currentHash != cachedHash
+	if hasChanged {
+		// 有变更，更新缓存
+		err = writeCachedHash(cacheFile, currentHash)
+		if err != nil {
+			xlog.Debug("更新缓存hash失败", xlog.String("error", err.Error()))
+		}
+		xlog.Debug("文件有变更", xlog.Any("files", filePath), xlog.String("oldHash", cachedHash[:8]), xlog.String("newHash", currentHash[:8]))
+	} else {
+		xlog.Debug("文件无变更", xlog.Any("files", filePath), xlog.String("hash", currentHash[:8]))
+	}
+
+	return hasChanged, nil
+}
+
+// 计算多个文件的联合hash值
+func calculateFilesHash(filePaths ...string) (string, error) {
+	hasher := sha256.New()
+
+	// 对文件路径进行排序，确保hash的一致性
+	sortedPaths := make([]string, len(filePaths))
+	copy(sortedPaths, filePaths)
+	sort.Strings(sortedPaths)
+
+	for _, filePath := range sortedPaths {
+		// 检查文件是否存在
+		_, err := os.Stat(filePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// 文件不存在，将路径和特殊标记写入hasher
+				hasher.Write([]byte(filePath))
+				hasher.Write([]byte("NOT_EXIST"))
+				continue
+			}
+			return "", fmt.Errorf("获取文件信息失败 %s: %w", filePath, err)
+		}
+
+		// 将文件路径写入hasher
+		hasher.Write([]byte(filePath))
+
+		// 读取文件内容计算hash（只基于内容，不包含修改时间和大小）
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			return "", fmt.Errorf("读取文件内容失败 %s: %w", filePath, err)
+		}
+		hasher.Write(content)
+	}
+
+	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
+}
+
+// 获取文件列表的缓存文件路径
+func getFilesCacheFilePath(filePaths ...string) string {
+	// 将所有文件路径合并生成唯一的缓存文件名
+	allPaths := strings.Join(filePaths, "|")
+	pathHash := sha256.Sum256([]byte(allPaths))
+	fileName := fmt.Sprintf("goreact-files-cache-%x.txt", pathHash[:8])
+	return filepath.Join(os.TempDir(), fileName)
 }

@@ -20,17 +20,40 @@
 
 {{if .IsDev}}
 <script>
-    let socket = new WebSocket("ws://127.0.0.1:3001/ws");
-    socket.onopen = () => {
-        socket.send({{ .RouteID }});
-		  };
+    var event = new EventSource("/hmr")
 
-    socket.onmessage = (event) => {
-        if (event.data === "reload") {
-            console.log("Change detected, reloading...");
-            window.location.reload();
+    // 添加错误处理和重连逻辑
+    var reconnectInterval = 2000; // 初始重连间隔(毫秒)
+    var maxReconnectInterval = 30000; // 最大重连间隔
+
+    event.addEventListener('error', function () {
+        if (event.readyState === EventSource.CLOSED) {
+            // 连接已关闭，尝试重连
+            console.log('HMR连接已断开，尝试重连...');
+            setTimeout(function () {
+                // 关闭旧连接
+                event.close();
+                // 创建新连接
+                event = new EventSource("/hmr");
+                event.addEventListener('hmr', function () {
+                    window.location.reload();
+                });
+                // 连接成功后刷新页面
+                event.addEventListener('open', function () {
+                    window.location.reload();
+                });
+                // 重新添加错误处理
+                event.addEventListener('error', arguments.callee);
+
+                // 增加重连间隔(指数退避)
+                reconnectInterval = Math.min(reconnectInterval * 1.5, maxReconnectInterval);
+            }, reconnectInterval);
         }
-    };
+    });
+
+    event.addEventListener('hmr', function () {
+        window.location.reload()
+    })
 </script>
 {{end}}
 

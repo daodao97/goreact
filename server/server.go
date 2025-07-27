@@ -65,14 +65,14 @@ func Gin() *gin.Engine {
 		c.Next()
 	})
 
-	if xapp.IsDev() {
-		setupDev(r)
-	}
-
 	if conf.Get().GoogleAdsTxt != "" {
 		r.GET("/ads.txt", func(c *gin.Context) {
 			c.String(http.StatusOK, conf.Get().GoogleAdsTxt)
 		})
+	}
+
+	if xapp.IsDev() {
+		setupDev(r)
 	}
 
 	return r

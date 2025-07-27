@@ -100,7 +100,6 @@ func BuildClientComponents(jsFolder, jsOutput string, aliases map[string]string)
 }
 
 func BuildServerComponents(jsFolder, jsOutput string, aliases map[string]string) (map[string]string, error) {
-	xlog.Debug("Building server Javascript")
 	result := map[string]string{}
 
 	filesJSX, err := util.GetFiles(jsFolder, ".jsx")

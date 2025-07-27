@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"os"
@@ -103,6 +104,9 @@ func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any
 }
 
 // Instance 实现 gin.HTMLRender 接口的方法
+// name: index.html:Home.js
+// name: Home.js
+// name: Home
 func (t *TemplateRenderer) Instance(name string, data any) render.Render {
 	componentName := ""
 	templateName := ""
@@ -116,6 +120,11 @@ func (t *TemplateRenderer) Instance(name string, data any) render.Render {
 	} else {
 		templateName = "index.html"
 		componentName = name
+	}
+
+	componentName = strings.TrimSuffix(componentName, ".jsx")
+	if !strings.HasSuffix(componentName, ".js") {
+		componentName = fmt.Sprintf("%s.js", componentName)
 	}
 
 	return &HTMLRender{
