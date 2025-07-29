@@ -54,6 +54,21 @@ func GithubCallbackHandler(c *gin.Context) {
 		return
 	}
 
+	emailResp, err := xrequest.New().
+		SetHeader("Authorization", "Bearer "+accessToken).
+		SetHeader("Accept", "application/json").
+		Get("https://api.github.com/user/emails")
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"error": "failed to get user emails"})
+		return
+	}
+
+	email := emailResp.Json().Get("0.email").String()
+	if email == "" {
+		c.JSON(http.StatusOK, gin.H{"error": "failed to get user email"})
+		return
+	}
+
 	var userInfo struct {
 		ID        int    `json:"id"`
 		Login     string `json:"login"`
@@ -68,8 +83,8 @@ func GithubCallbackHandler(c *gin.Context) {
 	}
 
 	userLoginInfo := map[string]string{
-		"email":      userInfo.Email,
-		"name":       userInfo.Name,
+		"email":      email,
+		"user_name":  userInfo.Name,
 		"avatar_url": userInfo.AvatarURL,
 		"channel":    "github",
 	}
@@ -82,5 +97,6 @@ func GithubCallbackHandler(c *gin.Context) {
 
 	userLoginInfo["token"] = token
 
-	c.JSON(http.StatusOK, userLoginInfo)
+	// c.JSON(http.StatusOK, userLoginInfo)
+	c.Redirect(http.StatusTemporaryRedirect, "/")
 }

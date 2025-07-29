@@ -17,9 +17,13 @@ var SupportedLanguages []string
 var LangMap = map[string]string{}
 
 // 默认语言
-const DefaultLanguage = "en"
+var DefaultLanguage = "en"
 
 var translate = map[string][]byte{}
+
+func SetDefaultLanguage(lang string) {
+	DefaultLanguage = lang
+}
 
 func InitI18n() error {
 	// 读取locales目录
