@@ -40,7 +40,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		var payload map[string]interface{}
+		var payload map[string]any
 		var verifyErr error
 
 		// 尝试验证 cookie token
@@ -87,7 +87,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		xlog.InfoCtx(c, "auth", xlog.Any("payload", payload))
+		xlog.DebugCtx(c, "auth", xlog.Map("payload", payload))
 		c.Set("auth", payload)
 		// 将 payload 添加到请求上下文
 		ctx := context.WithValue(c.Request.Context(), authContextKey{}, xdb.Record(payload))

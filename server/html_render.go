@@ -9,6 +9,7 @@ import (
 	"github.com/daodao97/goreact/base/login"
 	"github.com/daodao97/goreact/conf"
 	"github.com/daodao97/goreact/i18n"
+	"github.com/daodao97/xgo/xapp"
 )
 
 // HTMLRender 是 HTML 渲染器的自定义实现
@@ -37,6 +38,7 @@ func (r *HTMLRender) Render(w http.ResponseWriter) error {
 				"ErrorMessage":  fmt.Sprintf("错误：渲染 React 时出错 %+v\n", err),
 				"ComponentName": r.ComponentName,
 				"RequestInfo":   r.renderer.ginContext.Request.URL.Path,
+				"IsDev":         xapp.IsDev(),
 			})
 		}
 	}
