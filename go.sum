@@ -22,6 +22,8 @@ github.com/cloudwego/base64x v0.1.5/go.mod h1:0zlkT4Wn5C6NdauXdJRhSKRlJvmclQ1hhJ
 github.com/cloudwego/iasm v0.2.0/go.mod h1:8rXZaNYT2n95jn+zTI1sDr+IgcD2GVs0nlbbQPiEFhY=
 github.com/daodao97/xgo v0.0.0-20250729004802-e649aaae6582 h1:HkvG9tPf08jX++vg87YENwxbGP7YjCPv49o0Crpw1GE=
 github.com/daodao97/xgo v0.0.0-20250729004802-e649aaae6582/go.mod h1:uoorJ/xF/yjPGBdE7uLtQMunK4boXzmoufdZjdJp9Lw=
+github.com/daodao97/xgo v0.0.0-20250730041808-2db993900929 h1:G3ivMkL+NvP0nOLMYd8EDYU1VNIuOK10xtsyUugEPKE=
+github.com/daodao97/xgo v0.0.0-20250730041808-2db993900929/go.mod h1:uoorJ/xF/yjPGBdE7uLtQMunK4boXzmoufdZjdJp9Lw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
