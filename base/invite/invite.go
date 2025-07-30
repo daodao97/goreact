@@ -73,7 +73,7 @@ func InvitedList(c *gin.Context) {
 		pageSize = 100
 	}
 
-	total, invitedList, _ := login.UserModel.Page(page, pageSize, xdb.WhereEq("ref_uid", user.GetInt64("id")))
+	total, invitedList, _ := login.UserModel.Page(page, pageSize, xdb.WhereEq("ref_uid", user.GetInt64("id")), xdb.OrderByDesc("created_at"))
 
 	var list []xdb.Record
 
