@@ -60,6 +60,9 @@ func (r *HTMLRender) Render(w http.ResponseWriter) error {
 	data.Head = i18n.GetHead(r.renderer.ginContext, strings.ToLower(strings.TrimSuffix(r.ComponentName, ".js")))
 
 	data.Version = conf.Get().GitTag
+	if xapp.IsDev() {
+		data.Version = "dev"
+	}
 
 	// 先执行模板渲染，然后再释放资源
 	err = r.Template.ExecuteTemplate(w, r.TemplateName, data)
