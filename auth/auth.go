@@ -33,6 +33,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		// 尝试从 header 获取 API token
 		apiKey := c.GetHeader("X-API-KEY")
 
+		xlog.DebugCtx(c, "auth", xlog.String("cookieToken", cookieToken), xlog.String("authHeader", authHeader), xlog.String("apiKey", apiKey))
+
 		// 如果 cookie 和 header 都没有 token，返回未授权错误
 		if token == "" && apiKey == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Need Login"})
@@ -45,9 +47,10 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// 尝试验证 cookie token
 		if token != "" {
+			xlog.DebugCtx(c, "auth", xlog.String("token", token), xlog.String("apiid", conf.Get().AppID), xlog.String("jwt_secret", conf.Get().JwtSecret))
 			payload, verifyErr = xjwt.VerifyHMacToken(token, conf.Get().JwtSecret)
 			if verifyErr != nil {
-				xlog.ErrorCtx(c, "auth", xlog.Any("verifyErr", verifyErr))
+				xlog.ErrorCtx(c, "auth", xlog.Any("verifyErr", verifyErr), xlog.String("apiid", conf.Get().AppID), xlog.String("jwt_secret", conf.Get().JwtSecret))
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid session token"})
 				c.Abort()
 				return

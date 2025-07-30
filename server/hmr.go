@@ -18,6 +18,7 @@ func setupDev(r *gin.Engine) {
 	BuildJS()
 	// 创建一个全局通道用于广播 HMR 事件
 	hmrBroadcast := make(chan string, 10)
+
 	// 监听 frontend 目录, 有变动就重新构建
 	xutil.Go(context.Background(), func() {
 		frontendDir := filepath.Join(".", "frontend")
@@ -248,7 +249,7 @@ func watchFileContentChange(filePaths []string, callback func(changedFiles []str
 			now := time.Now()
 			if now.Sub(lastEventTime) > debounceInterval {
 				// 检查文件内容是否真正变化
-				changed, err := isFileChanged(relatedFiles...)
+				changed, _, err := isFileChanged(relatedFiles...)
 				if err != nil {
 					xlog.Error("check file content change", xlog.Any("files", relatedFiles), xlog.Any("error", err))
 					continue

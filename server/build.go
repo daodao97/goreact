@@ -51,20 +51,20 @@ func init() {
 	pagesDir = filepath.Join(tmpFrontendDir, "pages")
 }
 
-func BuildJS() {
-	frontendDirChanged, err := isDirChanged(frontendDir)
+func BuildJS() error {
+	frontendDirChanged, clearDirCache, err := isDirChanged(frontendDir)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	isPackageChanged, err := isFileChanged("package.json", "package-lock.json")
+	isPackageChanged, clearFileCache, err := isFileChanged("package.json", "package-lock.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if !frontendDirChanged && !isPackageChanged {
 		xlog.Debug("frontend dir is not changed and package is not changed, skip build")
-		return
+		return nil
 	}
 
 	xlog.Debug("build js start")
@@ -89,10 +89,24 @@ func BuildJS() {
 
 	BuildCSS()
 
-	buildJS()
+	if err := buildJS(); err != nil {
+		xlog.Error("Build error", xlog.Err(err))
+		// clear build cache
+		os.RemoveAll(tmpFrontendDir)
+		// clear hash cache files to allow rebuild
+		if clearDirCache != nil {
+			clearDirCache()
+		}
+		if clearFileCache != nil {
+			clearFileCache()
+		}
+		return err
+	}
+
+	return nil
 }
 
-func BuildCSS() {
+func BuildCSS() error {
 	xlog.Debug("build css start")
 	cmd := exec.Command("npx", "@tailwindcss/cli", "-i", filepath.Join(frontendDir, "css/tailwind-input.css"), "-o", filepath.Join(tmpFrontendDir, "css/tailwind.css"), "--postcss")
 	cmd.Dir = "./"
@@ -100,29 +114,29 @@ func BuildCSS() {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		xlog.Debug("build css", xlog.String("err", err.Error()), xlog.String("output", string(output)))
-		log.Fatal(err)
 	} else {
 		xlog.Debug("build css", xlog.String("output", string(output)))
 	}
+	return err
 }
 
-func buildJS() {
+func buildJS() error {
 	// 确保目录存在
 	err := ensureDirectories(clientEntry, serverEntry)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	xlog.Debug("BuildJS: generate entry files")
 	// 生成入口文件
 	err = generateEntryFiles()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	currentDir, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	xlog.Debug("BuildJS: build client components")
@@ -131,7 +145,7 @@ func buildJS() {
 		"#": filepath.Join(currentDir, "node_modules", "goreact", "ui"),
 	})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	xlog.Debug("BuildJS: build server components")
@@ -140,17 +154,18 @@ func buildJS() {
 		"#": filepath.Join(currentDir, "node_modules", "goreact", "ui"),
 	})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// copy frontend/public to build/public
 	xlog.Debug("BuildJS: copy frontend/public to build/public")
 	err = copyDir(filepath.Join(currentDir, "frontend/public"), buildDir)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	xlog.Debug("BuildJS: build done")
+	return nil
 }
 
 func copyDir(src string, dest string) error {
@@ -264,15 +279,24 @@ func getComponentFiles(componentsDir string) ([]string, error) {
 	return files, nil
 }
 
-func isDirChanged(dir1 string) (bool, error) {
+func isDirChanged(dir1 string) (bool, func(), error) {
 	// 计算目录的hash值
 	currentHash, err := calculateDirHash(dir1)
 	if err != nil {
-		return false, fmt.Errorf("计算目录hash失败: %w", err)
+		return false, nil, fmt.Errorf("计算目录hash失败: %w", err)
 	}
 
 	// 获取缓存文件路径
 	cacheFile := getCacheFilePath(dir1)
+
+	// 创建清理函数
+	clearCache := func() {
+		if err := os.Remove(cacheFile); err != nil && !os.IsNotExist(err) {
+			xlog.Debug("清除目录缓存文件失败", xlog.String("file", cacheFile), xlog.String("error", err.Error()))
+		} else {
+			xlog.Debug("清除目录缓存文件", xlog.String("file", cacheFile))
+		}
+	}
 
 	// 读取之前缓存的hash
 	cachedHash, err := readCachedHash(cacheFile)
@@ -283,7 +307,7 @@ func isDirChanged(dir1 string) (bool, error) {
 		if err != nil {
 			xlog.Debug("写入缓存hash失败", xlog.String("error", err.Error()))
 		}
-		return true, nil
+		return true, clearCache, nil
 	}
 
 	// 对比hash值
@@ -299,7 +323,7 @@ func isDirChanged(dir1 string) (bool, error) {
 		xlog.Debug("目录无变更", xlog.String("dir", dir1), xlog.String("hash", currentHash[:8]))
 	}
 
-	return hasChanged, nil
+	return hasChanged, clearCache, nil
 }
 
 // 计算目录的hash值
@@ -384,19 +408,28 @@ func writeCachedHash(cacheFile string, hash string) error {
 	return os.WriteFile(cacheFile, []byte(hash), 0644)
 }
 
-func isFileChanged(filePath ...string) (bool, error) {
+func isFileChanged(filePath ...string) (bool, func(), error) {
 	if len(filePath) == 0 {
-		return false, nil
+		return false, nil, nil
 	}
 
 	// 计算所有文件的联合hash值
 	currentHash, err := calculateFilesHash(filePath...)
 	if err != nil {
-		return false, fmt.Errorf("计算文件hash失败: %w", err)
+		return false, nil, fmt.Errorf("计算文件hash失败: %w", err)
 	}
 
 	// 获取缓存文件路径
 	cacheFile := getFilesCacheFilePath(filePath...)
+
+	// 创建清理函数
+	clearCache := func() {
+		if err := os.Remove(cacheFile); err != nil && !os.IsNotExist(err) {
+			xlog.Debug("清除文件缓存文件失败", xlog.String("file", cacheFile), xlog.String("error", err.Error()))
+		} else {
+			xlog.Debug("清除文件缓存文件", xlog.String("file", cacheFile))
+		}
+	}
 
 	// 读取之前缓存的hash
 	cachedHash, err := readCachedHash(cacheFile)
@@ -407,7 +440,7 @@ func isFileChanged(filePath ...string) (bool, error) {
 		if err != nil {
 			xlog.Debug("写入缓存hash失败", xlog.String("error", err.Error()))
 		}
-		return true, nil
+		return true, clearCache, nil
 	}
 
 	// 对比hash值
@@ -423,7 +456,7 @@ func isFileChanged(filePath ...string) (bool, error) {
 		xlog.Debug("文件无变更", xlog.Any("files", filePath), xlog.String("hash", currentHash[:8]))
 	}
 
-	return hasChanged, nil
+	return hasChanged, clearCache, nil
 }
 
 // 计算多个文件的联合hash值

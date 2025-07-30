@@ -17,7 +17,7 @@ func GetProvider(providerName string) *conf.AuthProvider {
 }
 
 func handleUserLogin(c *gin.Context, userInfo map[string]string, jwtSecret string) (string, error) {
-	userId, err := CreateUserOrIgnore(xdb.Record{
+	userId, err := CreateUserOrIgnore(c, xdb.Record{
 		"email":      userInfo["email"],
 		"user_name":  userInfo["user_name"],
 		"avatar_url": userInfo["avatar_url"],
@@ -50,15 +50,29 @@ func SetUserMoel(m xdb.Model) {
 	UserModel = m
 }
 
-func CreateUserOrIgnore(user xdb.Record) (int64, error) {
+func CreateUserOrIgnore(c *gin.Context, user xdb.Record) (int64, error) {
 	existing, _ := UserModel.First(
 		xdb.WhereEq("email", user.GetString("email")),
 		xdb.WhereEq("appid", conf.Get().AppID),
 	)
 	if existing != nil {
+		if OnUserLogin != nil {
+			OnUserLogin(c, existing)
+		}
 		return int64(existing.GetInt("id")), nil
 	}
 	user["appid"] = conf.Get().AppID
+
+	inviteCode, _ := c.Cookie("invite_code")
+	if inviteCode != "" {
+		inviteUser, _ := UserModel.First(
+			xdb.WhereEq("invite_code", inviteCode),
+			xdb.WhereEq("appid", conf.Get().AppID),
+		)
+		if inviteUser != nil {
+			user["ref_uid"] = inviteUser.GetInt("id")
+		}
+	}
 
 	uid, err := UserModel.Insert(user)
 	if err != nil {
@@ -66,7 +80,7 @@ func CreateUserOrIgnore(user xdb.Record) (int64, error) {
 	}
 	if OnNewRegisterFunc != nil {
 		user["id"] = uid
-		OnNewRegisterFunc(user)
+		OnNewRegisterFunc(c, user)
 	}
 	return uid, nil
 }
@@ -92,10 +106,16 @@ func GetUserInfo(c *gin.Context) (xdb.Record, error) {
 	return userInfo, nil
 }
 
-type OnNewRegister func(user xdb.Record)
+type UserHook func(ctx *gin.Context, user xdb.Record)
 
-var OnNewRegisterFunc OnNewRegister
+var OnNewRegisterFunc UserHook
 
-func SetOnNewRegister(fn OnNewRegister) {
+func SetOnNewRegister(fn UserHook) {
 	OnNewRegisterFunc = fn
+}
+
+var OnUserLogin UserHook
+
+func SetOnUserLogin(fn UserHook) {
+	OnUserLogin = fn
 }
