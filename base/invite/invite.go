@@ -47,13 +47,13 @@ func SetUserInviteCode(c *gin.Context) {
 		return
 	}
 
-	exist, _ := login.UserModel.Count(xdb.WhereEq("invite_code", userSetCode.Code))
+	exist, _ := dao.UserModel.Count(xdb.WhereEq("invite_code", userSetCode.Code))
 	if exist > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invite code already used"})
 		return
 	}
 
-	login.UserModel.Update(
+	dao.UserModel.Update(
 		xdb.Record{"invite_code": userSetCode.Code},
 		xdb.WhereEq("id", user.GetInt64("id")),
 	)
@@ -73,7 +73,7 @@ func InvitedList(c *gin.Context) {
 		pageSize = 100
 	}
 
-	total, invitedList, _ := login.UserModel.Page(page, pageSize, xdb.WhereEq("ref_uid", user.GetInt64("id")), xdb.OrderByDesc("created_at"))
+	total, invitedList, _ := dao.UserModel.Page(page, pageSize, xdb.WhereEq("ref_uid", user.GetInt64("id")), xdb.OrderByDesc("created_at"))
 
 	var list []xdb.Record
 
@@ -106,7 +106,7 @@ func InvitedList(c *gin.Context) {
 }
 
 func getUserInviteCode(uid int64) string {
-	inviteCode, _ := login.UserModel.First(xdb.WhereEq("id", uid))
+	inviteCode, _ := dao.UserModel.First(xdb.WhereEq("id", uid))
 	return inviteCode.GetString("invite_code")
 }
 

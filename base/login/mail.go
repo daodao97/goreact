@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/daodao97/goreact/conf"
+	"github.com/daodao97/goreact/dao"
 	"github.com/daodao97/goreact/util/mail"
 	"github.com/daodao97/xgo/xadmin"
 	"github.com/daodao97/xgo/xdb"
@@ -107,7 +108,7 @@ func Register(email string, password string, code string) (_user xdb.Record, err
 		return nil, err
 	}
 
-	user, err := UserModel.First(xdb.WhereEq("email", email), xdb.WhereEq("appid", conf.Get().AppID))
+	user, err := dao.UserModel.First(xdb.WhereEq("email", email), xdb.WhereEq("appid", conf.Get().AppID))
 	if err != nil && err != xdb.ErrNotFound {
 		return nil, err
 	}
@@ -115,7 +116,7 @@ func Register(email string, password string, code string) (_user xdb.Record, err
 		return nil, errors.New("user already exists")
 	}
 
-	id, err := UserModel.Insert(xdb.Record{
+	id, err := dao.UserModel.Insert(xdb.Record{
 		"email":     email,
 		"user_name": email,
 		"password":  xadmin.PasswordHash(password),
@@ -135,7 +136,7 @@ func Register(email string, password string, code string) (_user xdb.Record, err
 }
 
 func Login(email string, password string, code string) (_user xdb.Record, err error) {
-	user, err := UserModel.First(xdb.WhereEq("email", email), xdb.WhereEq("appid", conf.Get().AppID))
+	user, err := dao.UserModel.First(xdb.WhereEq("email", email), xdb.WhereEq("appid", conf.Get().AppID))
 	if err != nil && err != xdb.ErrNotFound {
 		return nil, err
 	}
@@ -161,7 +162,7 @@ func ResetPassword(email string, password string, code string) (_user xdb.Record
 		return nil, err
 	}
 
-	user, err := UserModel.First(xdb.WhereEq("email", email), xdb.WhereEq("appid", conf.Get().AppID))
+	user, err := dao.UserModel.First(xdb.WhereEq("email", email), xdb.WhereEq("appid", conf.Get().AppID))
 	if err != nil && err != xdb.ErrNotFound {
 		return nil, err
 	}
@@ -169,7 +170,7 @@ func ResetPassword(email string, password string, code string) (_user xdb.Record
 		return nil, errors.New("user not found")
 	}
 
-	_, err = UserModel.Update(xdb.Record{
+	_, err = dao.UserModel.Update(xdb.Record{
 		"password": xadmin.PasswordHash(password),
 	}, xdb.WhereEq("id", user.GetInt("id")))
 	if err != nil {

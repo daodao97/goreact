@@ -52,19 +52,42 @@ func init() {
 }
 
 func BuildJS() error {
-	frontendDirChanged, clearDirCache, err := isDirChanged(frontendDir)
-	if err != nil {
-		return err
-	}
+	return BuildJSWithForce(false)
+}
 
-	isPackageChanged, clearFileCache, err := isFileChanged("package.json", "package-lock.json")
-	if err != nil {
-		log.Fatal(err)
-	}
+func BuildJSWithForce(force bool) error {
+	var frontendDirChanged, isPackageChanged bool
+	var clearDirCache, clearFileCache func()
+	var err error
 
-	if !frontendDirChanged && !isPackageChanged {
-		xlog.Debug("frontend dir is not changed and package is not changed, skip build")
-		return nil
+	if !force {
+		frontendDirChanged, clearDirCache, err = isDirChanged(frontendDir)
+		if err != nil {
+			return err
+		}
+
+		isPackageChanged, clearFileCache, err = isFileChanged("package.json", "package-lock.json")
+		if err != nil {
+			return err
+		}
+
+		if !frontendDirChanged && !isPackageChanged {
+			xlog.Debug("frontend dir is not changed and package is not changed, skip build")
+			return nil
+		}
+	} else {
+		xlog.Debug("force build requested")
+		// 在强制构建时，我们仍然需要获取清理函数，但跳过变更检查
+		_, clearDirCache, err = isDirChanged(frontendDir)
+		if err != nil {
+			return err
+		}
+		_, clearFileCache, err = isFileChanged("package.json", "package-lock.json")
+		if err != nil {
+			return err
+		}
+		frontendDirChanged = true
+		isPackageChanged = true
 	}
 
 	xlog.Debug("build js start")
@@ -101,6 +124,31 @@ func BuildJS() error {
 			clearFileCache()
 		}
 		return err
+	}
+
+	// 构建成功，更新缓存
+	if frontendDirChanged {
+		currentHash, err := calculateDirHash(frontendDir)
+		if err == nil {
+			cacheFile := getCacheFilePath(frontendDir)
+			if err := writeCachedHash(cacheFile, currentHash); err != nil {
+				xlog.Debug("更新目录缓存失败", xlog.String("error", err.Error()))
+			} else {
+				xlog.Debug("更新目录缓存成功", xlog.String("hash", currentHash[:8]))
+			}
+		}
+	}
+
+	if isPackageChanged {
+		currentHash, err := calculateFilesHash("package.json", "package-lock.json")
+		if err == nil {
+			cacheFile := getFilesCacheFilePath("package.json", "package-lock.json")
+			if err := writeCachedHash(cacheFile, currentHash); err != nil {
+				xlog.Debug("更新文件缓存失败", xlog.String("error", err.Error()))
+			} else {
+				xlog.Debug("更新文件缓存成功", xlog.String("hash", currentHash[:8]))
+			}
+		}
 	}
 
 	return nil
@@ -303,21 +351,13 @@ func isDirChanged(dir1 string) (bool, func(), error) {
 	if err != nil {
 		// 第一次运行或缓存文件不存在，认为有变更
 		xlog.Debug("无法读取缓存hash，认为目录有变更", xlog.String("error", err.Error()))
-		err = writeCachedHash(cacheFile, currentHash)
-		if err != nil {
-			xlog.Debug("写入缓存hash失败", xlog.String("error", err.Error()))
-		}
+		// 注意：这里不立即写入缓存，等构建成功后再写入
 		return true, clearCache, nil
 	}
 
 	// 对比hash值
 	hasChanged := currentHash != cachedHash
 	if hasChanged {
-		// 有变更，更新缓存
-		err = writeCachedHash(cacheFile, currentHash)
-		if err != nil {
-			xlog.Debug("更新缓存hash失败", xlog.String("error", err.Error()))
-		}
 		xlog.Debug("目录有变更", xlog.String("dir", dir1), xlog.String("oldHash", cachedHash[:8]), xlog.String("newHash", currentHash[:8]))
 	} else {
 		xlog.Debug("目录无变更", xlog.String("dir", dir1), xlog.String("hash", currentHash[:8]))
@@ -436,21 +476,13 @@ func isFileChanged(filePath ...string) (bool, func(), error) {
 	if err != nil {
 		// 第一次运行或缓存文件不存在，认为有变更
 		xlog.Debug("无法读取缓存hash，认为文件有变更", xlog.String("error", err.Error()))
-		err = writeCachedHash(cacheFile, currentHash)
-		if err != nil {
-			xlog.Debug("写入缓存hash失败", xlog.String("error", err.Error()))
-		}
+		// 注意：这里不立即写入缓存，等构建成功后再写入
 		return true, clearCache, nil
 	}
 
 	// 对比hash值
 	hasChanged := currentHash != cachedHash
 	if hasChanged {
-		// 有变更，更新缓存
-		err = writeCachedHash(cacheFile, currentHash)
-		if err != nil {
-			xlog.Debug("更新缓存hash失败", xlog.String("error", err.Error()))
-		}
 		xlog.Debug("文件有变更", xlog.Any("files", filePath), xlog.String("oldHash", cachedHash[:8]), xlog.String("newHash", currentHash[:8]))
 	} else {
 		xlog.Debug("文件无变更", xlog.Any("files", filePath), xlog.String("hash", currentHash[:8]))

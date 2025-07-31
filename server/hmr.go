@@ -2,8 +2,11 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/daodao97/goreact/i18n"
@@ -14,10 +17,103 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+var clientIDCounter int64
+
+// HMR广播器，支持多客户端和事件节流
+type HMRBroadcaster struct {
+	clients          map[string]chan string
+	mutex            sync.RWMutex
+	throttle         *time.Timer
+	lastEvent        time.Time
+	throttleDuration time.Duration
+}
+
+func NewHMRBroadcaster() *HMRBroadcaster {
+	broadcaster := &HMRBroadcaster{
+		clients:          make(map[string]chan string),
+		throttleDuration: 300 * time.Millisecond, // 300ms 节流
+	}
+	xlog.Debug("HMR broadcaster created")
+	return broadcaster
+}
+
+// 注册客户端
+func (h *HMRBroadcaster) RegisterClient(clientID string) chan string {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	clientChan := make(chan string, 5)
+	h.clients[clientID] = clientChan
+	xlog.Debug("HMR client registered", xlog.String("clientID", clientID), xlog.Int("totalClients", len(h.clients)))
+	return clientChan
+}
+
+// 注销客户端
+func (h *HMRBroadcaster) UnregisterClient(clientID string) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	if clientChan, exists := h.clients[clientID]; exists {
+		close(clientChan)
+		delete(h.clients, clientID)
+		xlog.Debug("HMR client unregistered", xlog.String("clientID", clientID), xlog.Int("totalClients", len(h.clients)))
+	}
+}
+
+// 广播事件到所有客户端，带节流功能
+func (h *HMRBroadcaster) Broadcast(event string) {
+	h.mutex.Lock()
+	now := time.Now()
+
+	// 如果距离上次事件时间太短，启动或重置定时器
+	if now.Sub(h.lastEvent) < h.throttleDuration {
+		if h.throttle != nil {
+			h.throttle.Stop()
+		}
+		h.throttle = time.AfterFunc(h.throttleDuration, func() {
+			h.doBroadcast(event)
+		})
+		h.mutex.Unlock()
+		xlog.Debug("HMR event throttled", xlog.String("event", event))
+		return
+	}
+
+	// 立即执行广播
+	h.lastEvent = now
+	h.mutex.Unlock()
+	h.doBroadcast(event)
+}
+
+// 执行实际的广播
+func (h *HMRBroadcaster) doBroadcast(event string) {
+	h.mutex.RLock()
+	clientCount := len(h.clients)
+	h.mutex.RUnlock()
+
+	if clientCount == 0 {
+		xlog.Debug("No HMR clients to broadcast to")
+		return
+	}
+
+	xlog.Debug("Broadcasting HMR event", xlog.String("event", event), xlog.Int("clients", clientCount))
+
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
+
+	for clientID, clientChan := range h.clients {
+		select {
+		case clientChan <- event:
+			xlog.Debug("HMR event sent to client", xlog.String("clientID", clientID))
+		default:
+			xlog.Warn("HMR client channel full, skipping", xlog.String("clientID", clientID))
+		}
+	}
+}
+
 func setupDev(r *gin.Engine) {
 	BuildJS()
-	// 创建一个全局通道用于广播 HMR 事件
-	hmrBroadcast := make(chan string, 10)
+	// 创建 HMR 广播器
+	hmrBroadcaster := NewHMRBroadcaster()
 
 	// 监听 frontend 目录, 有变动就重新构建
 	xutil.Go(context.Background(), func() {
@@ -25,9 +121,8 @@ func setupDev(r *gin.Engine) {
 		xlog.Debug("HMR init: start watch frontend dir", xlog.String("dir", frontendDir))
 		watchDir(frontendDir, func(event fsnotify.Event) {
 			BuildJS()
-			xlog.Debug("frontend dir changed, prepare send hmr event", xlog.Any("event", event))
-			hmrBroadcast <- "hmr"
-			xlog.Debug("frontend dir changed, send hmr event")
+			xlog.Debug("frontend dir changed, broadcasting hmr event", xlog.Any("event", event))
+			hmrBroadcaster.Broadcast("hmr")
 		})
 	})
 
@@ -37,9 +132,8 @@ func setupDev(r *gin.Engine) {
 		xlog.Debug("HMR init: start watch locales dir", xlog.String("dir", localesDir))
 		watchDir(localesDir, func(event fsnotify.Event) {
 			i18n.InitI18n()
-			xlog.Debug("locales dir changed, prepare send hmr event", xlog.Any("event", event))
-			hmrBroadcast <- "hmr"
-			xlog.Debug("locales dir changed, send hmr event")
+			xlog.Debug("locales dir changed, broadcasting hmr event", xlog.Any("event", event))
+			hmrBroadcaster.Broadcast("hmr")
 		})
 	})
 
@@ -48,9 +142,8 @@ func setupDev(r *gin.Engine) {
 		xlog.Debug("HMR init: start watch package.json", xlog.String("file", packageJson))
 		watchFileContentChange([]string{packageJson}, func(changedFiles []string) {
 			BuildJS()
-			xlog.Debug("package.json changed, prepare send hmr event", xlog.Any("changedFiles", changedFiles))
-			hmrBroadcast <- "hmr"
-			xlog.Debug("package.json changed, send hmr event")
+			xlog.Debug("package.json changed, broadcasting hmr event", xlog.Any("changedFiles", changedFiles))
+			hmrBroadcaster.Broadcast("hmr")
 		})
 	})
 
@@ -61,38 +154,39 @@ func setupDev(r *gin.Engine) {
 		c.Writer.Header().Set("Connection", "keep-alive")
 		c.Writer.Header().Set("Transfer-Encoding", "chunked")
 		c.Writer.Header().Set("X-Accel-Buffering", "no") // 禁用 Nginx 缓冲（如有）
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Cache-Control")
 
 		c.Writer.Flush()
 
+		// 生成客户端ID
+		clientID := fmt.Sprintf("hmr-client-%d", atomic.AddInt64(&clientIDCounter, 1))
+
+		// 注册客户端到广播器
+		clientChan := hmrBroadcaster.RegisterClient(clientID)
+		defer hmrBroadcaster.UnregisterClient(clientID)
+
+		// 发送连接确认
 		c.SSEvent("connect", "connected")
 		c.Writer.Flush()
-		xlog.Debug("hmr connection established, waiting for events...")
-
-		// 为该客户端创建一个专用通道
-		clientChan := make(chan string, 1)
-
-		// 启动一个 goroutine 监听广播通道并转发到客户端通道
-		go func() {
-			for {
-				select {
-				case msg := <-hmrBroadcast:
-					clientChan <- msg
-				case <-c.Request.Context().Done():
-					return
-				}
-			}
-		}()
+		xlog.Debug("hmr connection established, waiting for events...", xlog.String("clientID", clientID))
 
 		// 主循环接收客户端通道的消息并发送
 		for {
 			select {
-			case msg := <-clientChan:
-				xlog.Debug("receive channel event, sending SSEvent: " + msg)
+			case msg, ok := <-clientChan:
+				if !ok {
+					xlog.Debug("client channel closed", xlog.String("clientID", clientID))
+					return
+				}
+				xlog.Debug("receive channel event, sending SSEvent", xlog.String("msg", msg), xlog.String("clientID", clientID))
 				c.SSEvent("hmr", msg)
 				c.Writer.Flush()
 			case <-c.Request.Context().Done():
+				xlog.Debug("client connection closed", xlog.String("clientID", clientID))
 				return
 			case <-time.After(30 * time.Second):
+				xlog.Debug("sending heartbeat", xlog.String("clientID", clientID))
 				c.SSEvent("ping", "ping")
 				c.Writer.Flush()
 			}

@@ -2,6 +2,7 @@ package login
 
 import (
 	"github.com/daodao97/goreact/conf"
+	"github.com/daodao97/goreact/dao"
 	"github.com/daodao97/xgo/xdb"
 	"github.com/daodao97/xgo/xjwt"
 	"github.com/gin-gonic/gin"
@@ -44,14 +45,8 @@ func handleUserLogin(c *gin.Context, userInfo map[string]string, jwtSecret strin
 	return token, nil
 }
 
-var UserModel xdb.Model
-
-func SetUserMoel(m xdb.Model) {
-	UserModel = m
-}
-
 func CreateUserOrIgnore(c *gin.Context, user xdb.Record) (int64, error) {
-	existing, _ := UserModel.First(
+	existing, _ := dao.UserModel.First(
 		xdb.WhereEq("email", user.GetString("email")),
 		xdb.WhereEq("appid", conf.Get().AppID),
 	)
@@ -65,7 +60,7 @@ func CreateUserOrIgnore(c *gin.Context, user xdb.Record) (int64, error) {
 
 	inviteCode, _ := c.Cookie("invite_code")
 	if inviteCode != "" {
-		inviteUser, _ := UserModel.First(
+		inviteUser, _ := dao.UserModel.First(
 			xdb.WhereEq("invite_code", inviteCode),
 			xdb.WhereEq("appid", conf.Get().AppID),
 		)
@@ -74,7 +69,7 @@ func CreateUserOrIgnore(c *gin.Context, user xdb.Record) (int64, error) {
 		}
 	}
 
-	uid, err := UserModel.Insert(user)
+	uid, err := dao.UserModel.Insert(user)
 	if err != nil {
 		return 0, err
 	}
