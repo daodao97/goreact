@@ -54,15 +54,13 @@ func AuthMiddleware(option ...AuthOptionFunc) gin.HandlerFunc {
 		// 如果 cookie 和 header 都没有 token，返回未授权错误
 		if token == "" && apiKey == "" {
 			// 如果配置了终止，则返回未授权错误
-			if authOption.NotAbort {
+			if !authOption.NotAbort {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Need Login"})
 				c.Abort()
 				return
 			}
 			// 如果配置了不终止，则继续执行
-			if !authOption.NotAbort {
-				c.Next()
-			}
+			c.Next()
 			return
 		}
 
