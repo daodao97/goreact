@@ -15,9 +15,25 @@ import (
 
 type authContextKey struct{}
 
+type AuthOption struct {
+	NotAbort bool
+}
+
+type AuthOptionFunc func(*AuthOption)
+
+func WithAuthOption(option AuthOptionFunc) AuthOptionFunc {
+	return func(o *AuthOption) {
+		option(o)
+	}
+}
+
 // gin middleware
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(option ...AuthOptionFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		authOption := AuthOption{}
+		for _, option := range option {
+			option(&authOption)
+		}
 		// 尝试从 cookie 获取 token
 		var token string
 		cookieToken, _ := c.Cookie("session_token")
@@ -37,8 +53,16 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// 如果 cookie 和 header 都没有 token，返回未授权错误
 		if token == "" && apiKey == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Need Login"})
-			c.Abort()
+			// 如果配置了终止，则返回未授权错误
+			if authOption.NotAbort {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Need Login"})
+				c.Abort()
+				return
+			}
+			// 如果配置了不终止，则继续执行
+			if !authOption.NotAbort {
+				c.Next()
+			}
 			return
 		}
 
