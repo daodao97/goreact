@@ -21,9 +21,9 @@ type AuthOption struct {
 
 type AuthOptionFunc func(*AuthOption)
 
-func WithAuthOption(option AuthOptionFunc) AuthOptionFunc {
+func WithAuthOption(notAbort bool) AuthOptionFunc {
 	return func(o *AuthOption) {
-		option(o)
+		o.NotAbort = notAbort
 	}
 }
 
