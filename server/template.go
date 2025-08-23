@@ -60,7 +60,7 @@ func (t *TemplateRenderer) SetGinContext(c *gin.Context) {
 }
 
 func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any) (template.HTML, error) {
-	reactContent, err := os.ReadFile(filepath.Join(buildServerDir, fragment))
+	reactContent, err := os.ReadFile(filepath.Join(globalConfig.BuildServerDir, fragment))
 	if err != nil {
 		return template.HTML(""), err
 	}

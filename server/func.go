@@ -14,6 +14,7 @@ import (
 	"github.com/daodao97/xgo/xlog"
 )
 
+
 func copyDir(src string, dest string) error {
 	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -45,7 +46,7 @@ func copyDir(src string, dest string) error {
 				return err
 			}
 
-			return os.WriteFile(destPath, data, 0644)
+			return os.WriteFile(destPath, data, DefaultFileMode)
 		}
 	})
 }
@@ -181,7 +182,7 @@ func readCachedHash(cacheFile string) (string, error) {
 
 // 写入缓存的hash
 func writeCachedHash(cacheFile string, hash string) error {
-	return os.WriteFile(cacheFile, []byte(hash), 0644)
+	return os.WriteFile(cacheFile, []byte(hash), DefaultFileMode)
 }
 
 func isFileChanged(filePath ...string) (bool, func(), error) {
