@@ -53,8 +53,8 @@ func aliasPlugin(aliases map[string]string) esbuild.Plugin {
 	}
 }
 
-func BuildClientComponents(jsFolder, jsOutput string, aliases map[string]string) error {
-	xlog.Debug("Building client Javascript")
+func BuildClientComponents(jsFolder, jsOutput string, aliases map[string]string, tmpFrontendDir string) error {
+	xlog.Debug(fmt.Sprintf("Building client Javascript, jsFolder %s => jsOutput %s", jsFolder, jsOutput))
 
 	filesJSX, err := util.GetFiles(jsFolder, ".jsx")
 	if err != nil {
@@ -154,8 +154,6 @@ func BuildServerComponents(jsFolder, jsOutput string, aliases map[string]string)
 				path = strings.Join(paths[1:], "")
 			}
 			result[path] = string(file.Contents)
-			fmt.Println("Server file built in:", path)
-
 		}
 	}
 
