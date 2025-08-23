@@ -24,23 +24,24 @@ func convertToJson(a any) string {
 }
 
 type GeneralPayload struct {
-	Translations       any
-	Payload            any
-	Template           string
-	TemplateID         string
-	ServerURL          string
-	Component          string
-	InnerHtmlContent   template.HTML
-	Lang               string
-	Website            *conf.Website
-	UserInfo           any
-	GoogleAdsTxt       string
-	GoogleAdsJS        string
-	GoogleAnalytics    string
-	MicrosoftClarityId string
-	Head               *model.Head
-	Version            string
-	IsDev              bool
+	Translations           any
+	Payload                any
+	Template               string
+	TemplateID             string
+	ServerURL              string
+	Component              string
+	InnerHtmlContent       template.HTML
+	Lang                   string
+	Website                *conf.Website
+	UserInfo               any
+	GoogleAdsTxt           string
+	GoogleAdsJS            string
+	GoogleAnalytics        string
+	MicrosoftClarityId     string
+	Head                   *model.Head
+	Version                string
+	IsDev                  bool
+	CloudflareTurnstileKey string
 }
 
 func extendPayload(
@@ -52,12 +53,19 @@ func extendPayload(
 	templateID := strings.ReplaceAll(name, "/", "-")
 	templateID = strings.ReplaceAll(templateID, ".html", "")
 
+	cloudflareTurnstile := conf.Get().Website.AuthConfig.CloudflareTurnstile
+	cloudflareTurnstileKey := ""
+	if cloudflareTurnstile != nil {
+		cloudflareTurnstileKey = cloudflareTurnstile.SiteKey
+	}
+
 	return &GeneralPayload{
-		Payload:          data,
-		Template:         name,
-		TemplateID:       templateID,
-		Component:        component,
-		InnerHtmlContent: htmlContent,
-		IsDev:            xapp.IsDev(),
+		Payload:                data,
+		Template:               name,
+		TemplateID:             templateID,
+		Component:              component,
+		InnerHtmlContent:       htmlContent,
+		IsDev:                  xapp.IsDev(),
+		CloudflareTurnstileKey: cloudflareTurnstileKey,
 	}
 }

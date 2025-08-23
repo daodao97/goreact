@@ -5,6 +5,16 @@ type Website struct {
 	SupportLang  []string
 	LangMap      map[string]string
 	AuthProvider []AuthProvider `yaml:"auth_provider"`
+	AuthConfig   AuthConfig     `yaml:"auth_config"`
+}
+
+type AuthConfig struct {
+	CloudflareTurnstile *CloudflareTurnstile `yaml:"cloudflare_turnstile"`
+}
+
+type CloudflareTurnstile struct {
+	SiteKey   string `yaml:"site_key"`
+	SecretKey string `yaml:"secret_key"`
 }
 
 type AuthProviderType string
