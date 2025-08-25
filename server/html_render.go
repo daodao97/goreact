@@ -10,6 +10,7 @@ import (
 	"github.com/daodao97/goreact/conf"
 	"github.com/daodao97/goreact/i18n"
 	"github.com/daodao97/xgo/xapp"
+	"github.com/gin-gonic/gin"
 )
 
 // HTMLRender 是 HTML 渲染器的自定义实现
@@ -20,6 +21,7 @@ type HTMLRender struct {
 	ComponentName string
 	Data          any
 	renderer      *TemplateRenderer
+	ginContext    *gin.Context
 }
 
 // Render 实现 render.Render 接口
@@ -30,14 +32,14 @@ func (r *HTMLRender) Render(w http.ResponseWriter) error {
 	var err error
 
 	if r.ComponentName != "" {
-		htmlContent, err = r.renderer.RenderReact(r.renderer.ginContext, r.ComponentName, r.Data)
+		htmlContent, err = r.renderer.RenderReact(r.ginContext, r.ComponentName, r.Data)
 		if err != nil {
 
 			return r.Template.ExecuteTemplate(w, "error.html", map[string]any{
 				"Title":         "服务端渲染失败",
 				"ErrorMessage":  fmt.Sprintf("错误：渲染 React 时出错 %+v\n", err),
 				"ComponentName": r.ComponentName,
-				"RequestInfo":   r.renderer.ginContext.Request.URL.Path,
+				"RequestInfo":   r.ginContext.Request.URL.Path,
 				"IsDev":         xapp.IsDev(),
 			})
 		}
@@ -45,10 +47,10 @@ func (r *HTMLRender) Render(w http.ResponseWriter) error {
 
 	data := extendPayload(r.Data, r.TemplateName, r.ComponentName, htmlContent)
 
-	data.Translations = i18n.GetTranslations(r.renderer.ginContext)
-	data.Lang = r.renderer.ginContext.GetString("lang")
+	data.Translations = i18n.GetTranslations(r.ginContext)
+	data.Lang = r.ginContext.GetString("lang")
 	data.Website = &conf.Get().Website
-	userInfo, err := login.GetUserInfo(r.renderer.ginContext)
+	userInfo, err := login.GetUserInfo(r.ginContext)
 	if err == nil {
 		data.UserInfo = userInfo
 	}
@@ -57,7 +59,7 @@ func (r *HTMLRender) Render(w http.ResponseWriter) error {
 	data.GoogleAdsJS = conf.Get().GoogleAdsJS
 	data.GoogleAnalytics = conf.Get().GoogleAnalytics
 	data.MicrosoftClarityId = conf.Get().MicrosoftClarityId
-	data.Head = i18n.GetHead(r.renderer.ginContext, strings.ToLower(strings.TrimSuffix(r.ComponentName, ".js")))
+	data.Head = i18n.GetHead(r.ginContext, strings.ToLower(strings.TrimSuffix(r.ComponentName, ".js")))
 
 	data.Version = conf.Get().GitTag
 	if xapp.IsDev() {

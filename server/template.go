@@ -6,7 +6,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	_ "embed"
@@ -48,6 +50,9 @@ func CreateTemplateRenderer(opts ...func(*TemplateOptions)) render.HTMLRender {
 	}
 }
 
+// 用于存储每个goroutine的context
+var contextStore sync.Map
+
 // TemplateRenderer 模板引擎
 type TemplateRenderer struct {
 	templates  *template.Template
@@ -56,7 +61,31 @@ type TemplateRenderer struct {
 }
 
 func (t *TemplateRenderer) SetGinContext(c *gin.Context) {
+	// 使用goroutine ID作为key存储context
+	gid := getGoroutineID()
+	contextStore.Store(gid, c)
 	t.ginContext = c
+}
+
+// 获取当前goroutine ID
+func getGoroutineID() uint64 {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	idField := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))[0]
+	var gid uint64
+	for _, b := range []byte(idField) {
+		if b < '0' || b > '9' {
+			break
+		}
+		gid = gid*10 + uint64(b-'0')
+	}
+	return gid
+}
+
+// 清理当前goroutine的context
+func (t *TemplateRenderer) CleanupGoroutineContext() {
+	gid := getGoroutineID()
+	contextStore.Delete(gid)
 }
 
 func (t *TemplateRenderer) RenderReact(c *gin.Context, fragment string, data any) (template.HTML, error) {
@@ -127,11 +156,24 @@ func (t *TemplateRenderer) Instance(name string, data any) render.Render {
 		componentName = fmt.Sprintf("%s.js", componentName)
 	}
 
+	// 获取当前goroutine的context
+	gid := getGoroutineID()
+	var currentContext *gin.Context
+	if ctx, exists := contextStore.Load(gid); exists {
+		currentContext = ctx.(*gin.Context)
+	}
+	
+	// 如果无法获取到当前context，使用默认的context（向后兼容）
+	if currentContext == nil {
+		currentContext = t.ginContext
+	}
+
 	return &HTMLRender{
 		Template:      t.templates,
 		TemplateName:  templateName,
 		ComponentName: componentName,
 		Data:          data,
 		renderer:      t,
+		ginContext:    currentContext,
 	}
 }

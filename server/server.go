@@ -81,6 +81,10 @@ func Gin() *gin.Engine {
 func SetRendererContextMiddleware(renderer *TemplateRenderer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		renderer.SetGinContext(c)
+		defer func() {
+			// 清理context以防止内存泄漏
+			renderer.CleanupGoroutineContext()
+		}()
 		c.Next()
 	}
 }
