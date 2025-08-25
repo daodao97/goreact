@@ -9,5 +9,5 @@ func SetupRouter(app *gin.RouterGroup) {
 	app.GET("/login/github", GithubCallbackHandler)
 	app.POST("/login/mail", MailCallbackHandler)
 	app.POST("/login/send-verification-code", SendVerificationCodeHandler)
-	app.GET("/logout", LogoutHandler)
+	app.POST("/logout", LogoutHandler)
 }

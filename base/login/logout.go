@@ -7,6 +7,9 @@ import (
 )
 
 func LogoutHandler(ctx *gin.Context) {
-	ctx.SetCookie("session_token", "", -1, "/", "", false, true)
+	ctx.SetCookie("session_token", "deleted", -3600, "/", "", false, true)
+	ctx.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+	ctx.Header("Pragma", "no-cache")
+	ctx.Header("Expires", "0")
 	ctx.Redirect(http.StatusSeeOther, "/")
 }
