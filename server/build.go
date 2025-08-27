@@ -110,6 +110,7 @@ func (b *JSBuilder) Build(force bool) error {
 
 	// 执行构建
 	if err := b.executeBuild(); err != nil {
+		xlog.Error("exec build error", xlog.Err(err))
 		b.cleanupOnError(clearCaches)
 		return err
 	}
