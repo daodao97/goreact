@@ -35,16 +35,19 @@ func AuthMiddleware(option ...AuthOptionFunc) gin.HandlerFunc {
 			option(&authOption)
 		}
 		// 尝试从 cookie 获取 token
-		var token string
-		cookieToken, _ := c.Cookie("session_token")
-		authHeader := c.GetHeader("Authorization")
+	var token string
+	tokenSource := ""
+	cookieToken, _ := c.Cookie("session_token")
+	authHeader := c.GetHeader("Authorization")
 
-		if cookieToken != "" {
-			token = cookieToken
-		}
-		if authHeader != "" {
-			token = strings.TrimPrefix(authHeader, "Bearer ")
-		}
+	if cookieToken != "" {
+		token = cookieToken
+		tokenSource = "cookie"
+	}
+	if authHeader != "" {
+		token = strings.TrimPrefix(authHeader, "Bearer ")
+		tokenSource = "header"
+	}
 
 		// 尝试从 header 获取 API token
 		apiKey := c.GetHeader("X-API-KEY")
@@ -68,16 +71,25 @@ func AuthMiddleware(option ...AuthOptionFunc) gin.HandlerFunc {
 		var verifyErr error
 
 		// 尝试验证 cookie token
-		if token != "" {
-			xlog.DebugCtx(c, "auth", xlog.String("token", token), xlog.String("apiid", conf.Get().AppID), xlog.String("jwt_secret", conf.Get().JwtSecret))
-			payload, verifyErr = xjwt.VerifyHMacToken(token, conf.Get().JwtSecret)
-			if verifyErr != nil {
-				xlog.ErrorCtx(c, "auth", xlog.Any("verifyErr", verifyErr), xlog.String("apiid", conf.Get().AppID), xlog.String("jwt_secret", conf.Get().JwtSecret))
+	if token != "" {
+		xlog.DebugCtx(c, "auth", xlog.String("token", token), xlog.String("apiid", conf.Get().AppID), xlog.String("jwt_secret", conf.Get().JwtSecret))
+		payload, verifyErr = xjwt.VerifyHMacToken(token, conf.Get().JwtSecret)
+		if verifyErr != nil {
+			xlog.ErrorCtx(c, "auth", xlog.Any("verifyErr", verifyErr), xlog.String("apiid", conf.Get().AppID), xlog.String("jwt_secret", conf.Get().JwtSecret))
+			if tokenSource == "cookie" {
+				c.SetCookie("session_token", "deleted", -3600, "/", "", false, true)
+				if c.Request != nil && c.Request.URL != nil && c.Request.URL.Path == "/" {
+					c.Redirect(http.StatusSeeOther, "/")
+				} else {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid session token"})
+				}
+			} else {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid session token"})
-				c.Abort()
-				return
 			}
+			c.Abort()
+			return
 		}
+	}
 
 		// 如果 cookie token 验证失败，尝试验证 API token
 		if apiKey != "" {
