@@ -10,7 +10,9 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-sql-driver/mysql v1.9.2
 	github.com/golang-jwt/jwt/v5 v5.2.2
+	github.com/resend/resend-go/v2 v2.27.0
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
+	github.com/spf13/cast v1.6.0
 	github.com/tidwall/gjson v1.18.0
 	rogchap.com/v8go v0.9.0
 )
@@ -55,7 +57,6 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	github.com/spf13/cast v1.6.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
