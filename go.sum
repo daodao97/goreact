@@ -20,8 +20,6 @@ github.com/cloudflare/tableflip v1.2.3/go.mod h1:P4gRehmV6Z2bY5ao5ml9Pd8u6kuEnlB
 github.com/cloudwego/base64x v0.1.5 h1:XPciSp1xaq2VCSt6lF0phncD4koWyULpl5bUxbfCyP4=
 github.com/cloudwego/base64x v0.1.5/go.mod h1:0zlkT4Wn5C6NdauXdJRhSKRlJvmclQ1hhJgA0rcu/8w=
 github.com/cloudwego/iasm v0.2.0/go.mod h1:8rXZaNYT2n95jn+zTI1sDr+IgcD2GVs0nlbbQPiEFhY=
-github.com/daodao97/xgo v0.0.0-20250729004802-e649aaae6582 h1:HkvG9tPf08jX++vg87YENwxbGP7YjCPv49o0Crpw1GE=
-github.com/daodao97/xgo v0.0.0-20250729004802-e649aaae6582/go.mod h1:uoorJ/xF/yjPGBdE7uLtQMunK4boXzmoufdZjdJp9Lw=
 github.com/daodao97/xgo v0.0.0-20250730041808-2db993900929 h1:G3ivMkL+NvP0nOLMYd8EDYU1VNIuOK10xtsyUugEPKE=
 github.com/daodao97/xgo v0.0.0-20250730041808-2db993900929/go.mod h1:uoorJ/xF/yjPGBdE7uLtQMunK4boXzmoufdZjdJp9Lw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -118,6 +116,8 @@ github.com/prometheus/common v0.48.0 h1:QO8U2CdOzSn1BBsmXJXduaaW+dY/5QLjfB8svtSz
 github.com/prometheus/common v0.48.0/go.mod h1:0/KsvlIEfPQCQ5I2iNSAWKPZziNCvRs5EC6ILDTlAPc=
 github.com/prometheus/procfs v0.12.0 h1:jluTpSng7V9hY0O2R9DzzJHYb2xULk9VTR1V1R/k6Bo=
 github.com/prometheus/procfs v0.12.0/go.mod h1:pcuDEFsWDnvcgNzo4EEweacyhjeA9Zk3cnaOZAZEfOo=
+github.com/resend/resend-go/v2 v2.27.0 h1:ZOXxU6oh6+w3W6f+o38z5cHP4J4pgq19mwn+rYZ/Ul0=
+github.com/resend/resend-go/v2 v2.27.0/go.mod h1:3YCb8c8+pLiqhtRFXTyFwlLvfjQtluxOr9HEh2BwCkQ=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/sendgrid/rest v2.6.9+incompatible h1:1EyIcsNdn9KIisLW50MKwmSRSK+ekueiEMJ7NEoxJo0=
