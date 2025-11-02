@@ -252,6 +252,14 @@ func SendVerificationCodeHandler(c *gin.Context) {
 		return
 	}
 
+	request.Email = strings.TrimSpace(request.Email)
+	if isEmailBlacklisted(request.Email) {
+		c.JSON(400, gin.H{
+			"message": "邮箱暂不支持注册",
+		})
+		return
+	}
+
 	err := SendVerificationCode(request.Email)
 	if err != nil {
 		c.JSON(400, gin.H{
@@ -295,6 +303,10 @@ func GenerateVerificationCode() string {
 }
 
 func SendVerificationCode(email string) error {
+	email = strings.TrimSpace(email)
+	if isEmailBlacklisted(email) {
+		return errors.New("邮箱暂不支持注册")
+	}
 	if VerificationCodeMailSender == nil {
 		return errors.New("verification code mail sender not set")
 	}
