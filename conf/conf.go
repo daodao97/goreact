@@ -5,14 +5,21 @@ import (
 )
 
 type Conf struct {
-	AppID              string  `json:"app_id" yaml:"app_id"`
-	GoogleAdsTxt       string  `yaml:"google_ads_txt"`
-	GoogleAdsJS        string  `yaml:"google_ads_js"`
-	GoogleAnalytics    string  `yaml:"google_analytics"`
-	JwtSecret          string  `json:"jwt_secret" yaml:"jwt_secret"`
-	GitTag             string  `json:"git_tag" yaml:"git_tag"`
-	MicrosoftClarityId string  `yaml:"microsoft_clarity_id"`
-	Website            Website `json:"website" yaml:"website"`
+	AppID              string         `json:"app_id" yaml:"app_id"`
+	GoogleAdsTxt       string         `yaml:"google_ads_txt"`
+	GoogleAdsJS        string         `yaml:"google_ads_js"`
+	GoogleAnalytics    string         `yaml:"google_analytics"`
+	JwtSecret          string         `json:"jwt_secret" yaml:"jwt_secret"`
+	GitTag             string         `json:"git_tag" yaml:"git_tag"`
+	MicrosoftClarityId string         `yaml:"microsoft_clarity_id"`
+	Website            Website        `json:"website" yaml:"website"`
+	EmailBlacklist     EmailBlacklist `json:"email_blacklist" yaml:"email_blacklist"`
+}
+
+type EmailBlacklist struct {
+	Suffixes []string `json:"suffixes" yaml:"suffixes"`
+	Keywords []string `json:"keywords" yaml:"keywords"`
+	Exact    []string `json:"exact" yaml:"exact"`
 }
 
 var conf *Conf

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/daodao97/goreact/conf"
@@ -66,6 +67,14 @@ func MailCallbackHandler(c *gin.Context) {
 		return
 	}
 
+	request.Email = strings.TrimSpace(request.Email)
+	if request.Mode == "register" && isEmailBlacklisted(request.Email) {
+		c.JSON(400, gin.H{
+			"message": "邮箱暂不支持注册",
+		})
+		return
+	}
+
 	var user xdb.Record
 	var err error
 
@@ -100,6 +109,53 @@ func MailCallbackHandler(c *gin.Context) {
 	payload["token"] = token
 
 	c.JSON(200, payload)
+}
+
+func isEmailBlacklisted(email string) bool {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return false
+	}
+
+	cfg := conf.Get()
+	if cfg == nil {
+		return false
+	}
+
+	blacklist := cfg.EmailBlacklist
+	lowerEmail := strings.ToLower(email)
+
+	for _, exact := range blacklist.Exact {
+		if strings.EqualFold(strings.TrimSpace(exact), email) {
+			return true
+		}
+	}
+
+	for _, suffix := range blacklist.Suffixes {
+		suffix = strings.TrimSpace(suffix)
+		if suffix == "" {
+			continue
+		}
+		lowerSuffix := strings.ToLower(suffix)
+		if !strings.HasPrefix(lowerSuffix, "@") {
+			lowerSuffix = "@" + lowerSuffix
+		}
+		if strings.HasSuffix(lowerEmail, lowerSuffix) {
+			return true
+		}
+	}
+
+	for _, keyword := range blacklist.Keywords {
+		keyword = strings.TrimSpace(keyword)
+		if keyword == "" {
+			continue
+		}
+		if strings.Contains(lowerEmail, strings.ToLower(keyword)) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func Register(email string, password string, code string) (_user xdb.Record, err error) {
