@@ -68,7 +68,7 @@ func MailCallbackHandler(c *gin.Context) {
 	}
 
 	request.Email = strings.TrimSpace(request.Email)
-	if request.Mode == "register" && isEmailBlacklisted(request.Email) {
+	if request.Mode == "register" && isEmailBlocked(request.Email) {
 		c.JSON(400, gin.H{
 			"message": "邮箱暂不支持注册",
 		})
@@ -111,7 +111,7 @@ func MailCallbackHandler(c *gin.Context) {
 	c.JSON(200, payload)
 }
 
-func isEmailBlacklisted(email string) bool {
+func isEmailBlocked(email string) bool {
 	email = strings.TrimSpace(email)
 	if email == "" {
 		return false
@@ -122,35 +122,68 @@ func isEmailBlacklisted(email string) bool {
 		return false
 	}
 
-	blacklist := cfg.EmailBlacklist
+	filter := cfg.EmailFilter
 	lowerEmail := strings.ToLower(email)
 
-	for _, exact := range blacklist.Exact {
-		if strings.EqualFold(strings.TrimSpace(exact), email) {
-			return true
+	matchExact := func(list []string) bool {
+		for _, exact := range list {
+			if strings.EqualFold(strings.TrimSpace(exact), email) {
+				return true
+			}
 		}
+		return false
 	}
 
-	for _, suffix := range blacklist.Suffixes {
-		suffix = strings.TrimSpace(suffix)
-		if suffix == "" {
-			continue
+	matchSuffix := func(list []string) bool {
+		for _, suffix := range list {
+			suffix = strings.TrimSpace(suffix)
+			if suffix == "" {
+				continue
+			}
+			lowerSuffix := strings.ToLower(suffix)
+			if !strings.HasPrefix(lowerSuffix, "@") {
+				lowerSuffix = "@" + lowerSuffix
+			}
+			if strings.HasSuffix(lowerEmail, lowerSuffix) {
+				return true
+			}
 		}
-		lowerSuffix := strings.ToLower(suffix)
-		if !strings.HasPrefix(lowerSuffix, "@") {
-			lowerSuffix = "@" + lowerSuffix
-		}
-		if strings.HasSuffix(lowerEmail, lowerSuffix) {
-			return true
-		}
+		return false
 	}
 
-	for _, keyword := range blacklist.Keywords {
-		keyword = strings.TrimSpace(keyword)
-		if keyword == "" {
-			continue
+	matchKeyword := func(list []string) bool {
+		for _, keyword := range list {
+			keyword = strings.TrimSpace(keyword)
+			if keyword == "" {
+				continue
+			}
+			if strings.Contains(lowerEmail, strings.ToLower(keyword)) {
+				return true
+			}
 		}
-		if strings.Contains(lowerEmail, strings.ToLower(keyword)) {
+		return false
+	}
+
+	switch filter.Mode {
+	case "whitelist":
+		if matchExact(filter.Exact) {
+			return false
+		}
+		if matchSuffix(filter.Suffixes) {
+			return false
+		}
+		if matchKeyword(filter.Keywords) {
+			return false
+		}
+		return true
+	default:
+		if matchExact(filter.Exact) {
+			return true
+		}
+		if matchSuffix(filter.Suffixes) {
+			return true
+		}
+		if matchKeyword(filter.Keywords) {
 			return true
 		}
 	}
@@ -253,7 +286,7 @@ func SendVerificationCodeHandler(c *gin.Context) {
 	}
 
 	request.Email = strings.TrimSpace(request.Email)
-	if isEmailBlacklisted(request.Email) {
+	if isEmailBlocked(request.Email) {
 		c.JSON(400, gin.H{
 			"message": "邮箱暂不支持注册",
 		})
@@ -304,7 +337,7 @@ func GenerateVerificationCode() string {
 
 func SendVerificationCode(email string) error {
 	email = strings.TrimSpace(email)
-	if isEmailBlacklisted(email) {
+	if isEmailBlocked(email) {
 		return errors.New("邮箱暂不支持注册")
 	}
 	if VerificationCodeMailSender == nil {
