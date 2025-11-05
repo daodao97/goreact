@@ -15,7 +15,7 @@ type Conf struct {
 	GitTag             string      `json:"git_tag" yaml:"git_tag"`
 	MicrosoftClarityId string      `yaml:"microsoft_clarity_id"`
 	Website            Website     `json:"website" yaml:"website"`
-	EmailFilter        EmailFilter `json:"email_blacklist" yaml:"email_blacklist"`
+	EmailFilter        EmailFilter `json:"email_filter" yaml:"email_filter"`
 }
 
 type EmailFilter struct {
