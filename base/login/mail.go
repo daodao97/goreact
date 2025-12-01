@@ -70,7 +70,7 @@ func MailCallbackHandler(c *gin.Context) {
 	request.Email = strings.TrimSpace(request.Email)
 	if request.Mode == "register" && isEmailBlocked(request.Email) {
 		c.JSON(400, gin.H{
-			"message": "邮箱暂不支持注册",
+			"message": "此邮箱后缀暂不支持注册, 请使用其他常见邮箱",
 		})
 		return
 	}
@@ -288,7 +288,7 @@ func SendVerificationCodeHandler(c *gin.Context) {
 	request.Email = strings.TrimSpace(request.Email)
 	if isEmailBlocked(request.Email) {
 		c.JSON(400, gin.H{
-			"message": "邮箱暂不支持注册",
+			"message": "此邮箱后缀暂不支持注册, 请使用其他常见邮箱",
 		})
 		return
 	}
@@ -338,7 +338,7 @@ func GenerateVerificationCode() string {
 func SendVerificationCode(email string) error {
 	email = strings.TrimSpace(email)
 	if isEmailBlocked(email) {
-		return errors.New("邮箱暂不支持注册")
+		return errors.New("此邮箱后缀暂不支持注册, 请使用其他常见邮箱")
 	}
 	if VerificationCodeMailSender == nil {
 		return errors.New("verification code mail sender not set")
