@@ -241,12 +241,24 @@ func (b *JSBuilder) buildJS() error {
 		"@": b.config.FrontendDir,
 	}
 
-	err = BuildClientComponents(b.config.ClientEntry, b.config.BuildDir, aliases, b.config.TmpFrontendDir)
+	err = BuildClientComponents(
+		b.config.ClientEntry,
+		b.config.BuildDir,
+		aliases,
+		b.config.TmpFrontendDir,
+		b.config.FrontendDir,
+	)
 	if err != nil {
 		return err
 	}
 
-	_, err = BuildServerComponents(b.config.ServerEntry, b.config.BuildServerDir, aliases)
+	_, err = BuildServerComponents(
+		b.config.ServerEntry,
+		b.config.BuildServerDir,
+		aliases,
+		b.config.TmpFrontendDir,
+		b.config.FrontendDir,
+	)
 	if err != nil {
 		return err
 	}

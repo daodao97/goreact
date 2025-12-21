@@ -17,6 +17,49 @@ const messageChannelPolyfill = `if(typeof MessageChannel==="undefined"){var Mess
 
 const processPolyfill = `var process = {env: {NODE_ENV: "production"}};`
 
+// formatEsbuildMessages creates readable errors with file/line/column and path mapping.
+func formatEsbuildMessages(msgs []esbuild.Message, pathMap map[string]string) string {
+	var sb strings.Builder
+
+	for i, msg := range msgs {
+		if i > 0 {
+			sb.WriteString("\n")
+		}
+
+		filePath := ""
+		if msg.Location != nil {
+			filePath = msg.Location.File
+			for from, to := range pathMap {
+				if strings.HasPrefix(filePath, from) {
+					filePath = to + strings.TrimPrefix(filePath, from)
+					break
+				}
+			}
+			fmt.Fprintf(&sb, "%s:%d:%d: %s", filePath, msg.Location.Line, msg.Location.Column, msg.Text)
+		} else {
+			sb.WriteString(msg.Text)
+		}
+
+		for _, note := range msg.Notes {
+			sb.WriteString("\n  ")
+			if note.Location != nil {
+				noteFile := note.Location.File
+				for from, to := range pathMap {
+					if strings.HasPrefix(noteFile, from) {
+						noteFile = to + strings.TrimPrefix(noteFile, from)
+						break
+					}
+				}
+				fmt.Fprintf(&sb, "note %s:%d:%d: %s", noteFile, note.Location.Line, note.Location.Column, note.Text)
+			} else {
+				fmt.Fprintf(&sb, "note: %s", note.Text)
+			}
+		}
+	}
+
+	return sb.String()
+}
+
 func aliasPlugin(aliases map[string]string) esbuild.Plugin {
 	return esbuild.Plugin{
 		Name: "alias-resolver",
@@ -53,7 +96,7 @@ func aliasPlugin(aliases map[string]string) esbuild.Plugin {
 	}
 }
 
-func BuildClientComponents(jsFolder, jsOutput string, aliases map[string]string, tmpFrontendDir string) error {
+func BuildClientComponents(jsFolder, jsOutput string, aliases map[string]string, tmpFrontendDir string, frontendDir string) error {
 	xlog.Debug(fmt.Sprintf("Building client Javascript, jsFolder %s => jsOutput %s", jsFolder, jsOutput))
 
 	filesJSX, err := util.GetFiles(jsFolder, ".jsx")
@@ -93,13 +136,15 @@ func BuildClientComponents(jsFolder, jsOutput string, aliases map[string]string,
 	})
 
 	if len(builds.Errors) > 0 {
-		return fmt.Errorf("error on esbuild: %v", builds.Errors)
+		return fmt.Errorf("esbuild errors:\n%s", formatEsbuildMessages(builds.Errors, map[string]string{
+			tmpFrontendDir: frontendDir,
+		}))
 	}
 
 	return nil
 }
 
-func BuildServerComponents(jsFolder, jsOutput string, aliases map[string]string) (map[string]string, error) {
+func BuildServerComponents(jsFolder, jsOutput string, aliases map[string]string, tmpFrontendDir string, frontendDir string) (map[string]string, error) {
 	result := map[string]string{}
 
 	filesJSX, err := util.GetFiles(jsFolder, ".jsx")
@@ -143,7 +188,9 @@ func BuildServerComponents(jsFolder, jsOutput string, aliases map[string]string)
 	})
 
 	if len(builds.Errors) > 0 {
-		return result, fmt.Errorf("error on esbuild: %v", builds.Errors)
+		return result, fmt.Errorf("esbuild errors:\n%s", formatEsbuildMessages(builds.Errors, map[string]string{
+			tmpFrontendDir: frontendDir,
+		}))
 	}
 
 	for _, file := range builds.OutputFiles {
